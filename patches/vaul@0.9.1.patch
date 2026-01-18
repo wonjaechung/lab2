@@ -1,0 +1,12 @@
+diff --git a/node_modules/vaul/package.json b/node_modules/vaul/package.json
+index 0c9780a..6610b37 100644
+--- a/node_modules/vaul/package.json
++++ b/node_modules/vaul/package.json
+@@ -37,6 +37,6 @@
+   },
+   "peerDependencies": {
+     "react": "^16.8 || ^17.0 || ^18.0",
+-    "react-dom": "^16.8 || ^17.0 || ^18.0"
++    "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0.0"
+   }
+ }
