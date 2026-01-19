@@ -44,7 +44,7 @@ export function AiBriefingBanner() {
       <DialogTrigger asChild>
         <button 
           onClick={handleOpen}
-          className="w-full h-full bg-purple-50/50 hover:bg-purple-50 border border-purple-100 rounded-xl p-6 flex items-center justify-between transition-all active:scale-[0.99] group text-left"
+          className="w-full h-full bg-purple-50/50 hover:bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-center justify-between transition-all active:scale-[0.99] group text-left"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">

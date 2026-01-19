@@ -130,7 +130,7 @@ type SortKey = keyof Asset | 'holderCount' | 'influenceScore' | 'tradingVolume' 
 
 type Filter = {
   id: string;
-  type: 'market' | 'category' | 'mcap' | 'change' | 'trend' | 'rsi' | 'volume' | 'feargreed' | 'ma';
+  type: 'market' | 'category' | 'mcap' | 'change' | 'trend' | 'rsi' | 'volume' | 'feargreed' | 'ma' | 'buysurge' | 'deposit' | 'whaletrade' | 'profit' | 'beta' | 'volatility';
   label: string;
   value: string;
   rawValue?: string | string[] | number[] | Record<string, any>;
@@ -212,19 +212,81 @@ const filterOptions: Record<string, FilterOption> = {
     description: '한달 일평균 거래량 대비 현재 거래량의 비율을 나타내요. RVOL이 높을수록 시장 관심이 높아 급격한 가격 변동이 예상되고, 낮을수록 거래가 침체된 상태예요.',
     type: 'custom',
   },
+  buysurge: {
+    id: 'buysurge',
+    name: '매수세 급증',
+    description: '1시간 매수량이 24시간 평균보다 많고, 체결강도(매수총액/매도총액)가 높은 코인을 찾아요.',
+    type: 'custom',
+  },
+  deposit: {
+    id: 'deposit',
+    name: '거래소입금',
+    description: '최근 1시간 동안의 순입금액이 직전 24시간 평균 대비 급증한 코인을 찾아요.',
+    type: 'custom',
+  },
+  whaletrade: {
+    id: 'whaletrade',
+    name: '큰손동향',
+    description: '자산 규모 및 3개월 평균 거래량 상위 100인의 주간 순매수/순매도 동향을 추적합니다. 시장을 주도하는 스마트 머니의 흐름을 확인하세요.',
+    type: 'custom',
+  },
+  profit: {
+    id: 'profit',
+    name: '미실현수익',
+    description: '현재 가격 기준으로 빗썸 유저들이 보유한 총 수익금 규모입니다. 수익 비중이 높을수록 가격 변동 시 차익 실현 매물이 나올 가능성이 높음을 의미합니다.',
+    type: 'custom',
+  },
+  beta: {
+    id: 'beta',
+    name: '베타',
+    description: '비트코인 대비 움직임을 나타내는 지표예요. 베타가 1.0보다 크면 비트코인보다 더 공격적으로 움직이고, 1.0보다 작으면 더 방어적으로 움직여요.',
+    type: 'custom',
+  },
+  volatility: {
+    id: 'volatility',
+    name: '일간 변동폭',
+    description: '당일 최저가와 최고가의 차이를 백분율로 나타냅니다. 수치가 높을수록 단기 매매 기회가 많지만 리스크도 함께 커집니다.',
+    type: 'custom',
+  },
 };
 
-const mainInfoItems = [
-  { id: 'market', name: '마켓' },
-  { id: 'category', name: '섹터' },
-  { id: 'mcap', name: '시가총액' },
-  { id: 'change', name: '가격등락률' },
-];
-
-const technicalAnalysisItems = [
-  { id: 'rsi', name: '과매수/과매도' },
-  { id: 'ma', name: '골든크로스/데드크로스' },
-  { id: 'volume', name: '상대 거래량' },
+const filterGroups = [
+  {
+    id: 'main',
+    name: '주요정보',
+    items: [
+      { id: 'market', name: '마켓' },
+      { id: 'category', name: '섹터' },
+      { id: 'mcap', name: '시가총액' },
+    ],
+  },
+  {
+    id: 'exchange',
+    name: '거래소 동향',
+    items: [
+      { id: 'deposit', name: '거래소입금' },
+      { id: 'whaletrade', name: '큰손동향' },
+    ],
+  },
+  {
+    id: 'price',
+    name: '시세정보',
+    items: [
+      { id: 'change', name: '가격등락률' },
+      { id: 'volatility', name: '일간 변동폭' },
+    ],
+  },
+  {
+    id: 'technical',
+    name: '기술적분석',
+    items: [
+      { id: 'rsi', name: '과매수/과매도' },
+      { id: 'ma', name: '골든크로스/데드크로스' },
+      { id: 'volume', name: '상대 거래량' },
+      { id: 'beta', name: '베타' },
+      { id: 'buysurge', name: '매수세 급증' },
+    ],
+  },
 ];
 
 const defaultAssets: Asset[] = assetsData.map(asset => ({
@@ -256,6 +318,13 @@ interface AssetComparisonTableProps {
     range?: string | null;
     crossover?: string | null;
     category?: string | null;
+    multiplier?: string | null;
+    executionStrength?: string | null;
+    tradeType?: string | null;
+    amount?: string | null;
+    betaDirection?: string | null;
+    betaMultiplier?: string | null;
+    volatilityThreshold?: string | null;
   };
 }
 
@@ -305,7 +374,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [selectedFilterMenu, setSelectedFilterMenu] = useState<string>('mcap');
-  const [tempFilterValues, setTempFilterValues] = useState<Record<string, string | string[] | number[]>>({});
+  const [tempFilterValues, setTempFilterValues] = useState<Record<string, string | string[] | number[] | number[][]>>({});
   const [mcapFilterMode, setMcapFilterMode] = useState<'range' | 'rank'>('range');
   
   // Custom filter states
@@ -327,6 +396,21 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
   });
   const [volumeFilterRvol, setVolumeFilterRvol] = useState<number>(1.5);
   const [volumeFilterDirection, setVolumeFilterDirection] = useState<'above' | 'below'>('above');
+  
+  const [buySurgeMultiplier, setBuySurgeMultiplier] = useState<number>(2.0);
+  const [buySurgeExecutionStrength, setBuySurgeExecutionStrength] = useState<number>(100);
+  
+  const [depositMultiplier, setDepositMultiplier] = useState<number>(1.5);
+  
+  const [whaleTradeType, setWhaleTradeType] = useState<'whale_buy' | 'whale_sell' | 'trader_buy' | 'trader_sell' | null>(null);
+  
+  const [profitAmount, setProfitAmount] = useState<number | null>(null);
+  const [profitRatio, setProfitRatio] = useState<number | null>(null);
+  
+  const [betaDirection, setBetaDirection] = useState<'same' | 'opposite'>('same');
+  const [betaMultiplier, setBetaMultiplier] = useState<number>(1.0);
+  
+  const [volatilityThreshold, setVolatilityThreshold] = useState<number>(10.0);
 
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' }>({ key: 'rank', direction: 'ascending' });
@@ -476,6 +560,131 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
       };
       setActiveFilters([categoryFilter]);
       setSelectedFilterMenu('category');
+    } else if (filterType === 'buysurge') {
+      // 매수세 급증 필터
+      const multiplier = parseFloat(initialFilter.multiplier || '1.5');
+      const executionStrength = parseInt(initialFilter.executionStrength || '100');
+      
+      setBuySurgeMultiplier(multiplier);
+      setBuySurgeExecutionStrength(executionStrength);
+      
+      const buySurgeFilter: Filter = {
+        id: 'buysurge-auto',
+        type: 'buysurge',
+        label: '매수세 급증',
+        value: `1시간 매수량이 24시간 평균보다 ${multiplier.toFixed(1)}배 많고, 체결강도가 ${executionStrength}% 이상인 코인`,
+        rawValue: {
+          type: 'buysurge',
+          multiplier: multiplier,
+          executionStrength: executionStrength,
+        },
+      };
+      setActiveFilters([buySurgeFilter]);
+      setSelectedFilterMenu('buysurge');
+    } else if (filterType === 'deposit') {
+      // 거래소입금 필터
+      const multiplier = parseFloat(initialFilter.multiplier || '1.5');
+      
+      setDepositMultiplier(multiplier);
+      
+      const depositFilter: Filter = {
+        id: 'deposit-auto',
+        type: 'deposit',
+        label: '거래소입금',
+        value: `최근 1시간 동안의 순입금액이 직전 24시간 평균 대비 ${multiplier.toFixed(1)}배 이상 유입된 코인`,
+        rawValue: {
+          type: 'deposit',
+          multiplier: multiplier,
+        },
+      };
+      setActiveFilters([depositFilter]);
+      setSelectedFilterMenu('deposit');
+    } else if (filterType === 'whaletrade') {
+      // 큰손동향 필터
+      const tradeType = initialFilter.tradeType as 'whale_buy' | 'whale_sell' | 'trader_buy' | 'trader_sell' | null;
+      if (!tradeType) return;
+      
+      setWhaleTradeType(tradeType);
+      
+      const labels: Record<string, string> = {
+        'whale_buy': '고래 순매수',
+        'whale_sell': '고래 순매도',
+        'trader_buy': '거래왕 순매수',
+        'trader_sell': '거래왕 순매도',
+      };
+      
+      const whaleTradeFilter: Filter = {
+        id: 'whaletrade-auto',
+        type: 'whaletrade',
+        label: '큰손동향',
+        value: labels[tradeType],
+        rawValue: {
+          type: 'whaletrade',
+          tradeType: tradeType,
+        },
+      };
+      setActiveFilters([whaleTradeFilter]);
+      setSelectedFilterMenu('whaletrade');
+    } else if (filterType === 'profit') {
+      // 미실현수익 필터
+      const amount = initialFilter.amount ? parseFloat(initialFilter.amount) : null;
+      
+      if (amount === null) return;
+      
+      setProfitAmount(amount);
+      
+      const profitFilter: Filter = {
+        id: 'profit-auto',
+        type: 'profit',
+        label: '미실현수익',
+        value: `미실현 수익금 합계가 ${amount}억원 이상인 코인`,
+        rawValue: {
+          type: 'profit',
+          amount: amount,
+        },
+      };
+      setActiveFilters([profitFilter]);
+      setSelectedFilterMenu('profit');
+    } else if (filterType === 'beta') {
+      // 베타 필터
+      const direction = (initialFilter.betaDirection || 'same') as 'same' | 'opposite';
+      const multiplier = parseFloat(initialFilter.betaMultiplier || '1.0');
+      
+      setBetaDirection(direction);
+      setBetaMultiplier(multiplier);
+      
+      const directionLabel = direction === 'same' ? '같은' : '반대';
+      const betaFilter: Filter = {
+        id: 'beta-auto',
+        type: 'beta',
+        label: '베타',
+        value: `비트코인과 ${directionLabel} 방향으로 ${multiplier.toFixed(1)}배 이상 움직이는 종목`,
+        rawValue: {
+          type: 'beta',
+          direction: direction,
+          multiplier: multiplier,
+        },
+      };
+      setActiveFilters([betaFilter]);
+      setSelectedFilterMenu('beta');
+    } else if (filterType === 'volatility') {
+      // 일간 변동폭 필터
+      const threshold = parseFloat(initialFilter.volatilityThreshold || '10.0');
+      
+      setVolatilityThreshold(threshold);
+      
+      const volatilityFilter: Filter = {
+        id: 'volatility-auto',
+        type: 'volatility',
+        label: '일간 변동폭',
+        value: `당일 저가 대비 고가 차이가 ${threshold.toFixed(1)}% 이상인 종목`,
+        rawValue: {
+          type: 'volatility',
+          threshold: threshold,
+        },
+      };
+      setActiveFilters([volatilityFilter]);
+      setSelectedFilterMenu('volatility');
     }
   }, [initialFilter]);
 
@@ -539,15 +748,30 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
 
     return assets.filter(asset => {
       return activeFilters.every(filter => {
-        if (filter.type === 'mcap' && filter.rawValue && Array.isArray(filter.rawValue) && filter.rawValue.length === 2) {
-          const [min, max] = filter.rawValue as number[];
-          // 순위권 필터인지 확인 (max가 10000 이하인 경우 순위권으로 판단)
-          if (max <= 10000) {
-            return asset.rank >= min && asset.rank <= max;
+        if (filter.type === 'mcap' && filter.rawValue && Array.isArray(filter.rawValue)) {
+          // 여러개 선택된 경우 (배열의 배열)
+          if (filter.rawValue.length > 0 && Array.isArray(filter.rawValue[0])) {
+            const ranges = filter.rawValue as number[][];
+            return ranges.some(([min, max]) => {
+              // 순위권 필터인지 확인 (max가 10000 이하인 경우 순위권으로 판단)
+              if (max <= 10000) {
+                return asset.rank >= min && asset.rank <= max;
+              }
+              // 시가총액 범위 필터
+              const assetMcap = parseMarketCap(asset.marketCap || '0');
+              return assetMcap >= min && assetMcap <= max;
+            });
+          } else if (filter.rawValue.length === 2) {
+            // 단일 선택인 경우
+            const [min, max] = filter.rawValue as number[];
+            // 순위권 필터인지 확인 (max가 10000 이하인 경우 순위권으로 판단)
+            if (max <= 10000) {
+              return asset.rank >= min && asset.rank <= max;
+            }
+            // 시가총액 범위 필터
+            const assetMcap = parseMarketCap(asset.marketCap || '0');
+            return assetMcap >= min && assetMcap <= max;
           }
-          // 시가총액 범위 필터
-          const assetMcap = parseMarketCap(asset.marketCap || '0');
-          return assetMcap >= min && assetMcap <= max;
         }
         if (filter.type === 'change' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
           const changeFilter = filter.rawValue as { period?: string; min?: number; max?: number; date?: string; value?: number; direction?: string };
@@ -571,6 +795,65 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
           } else if (changeFilter.direction === 'down') {
             return asset.today <= (changeFilter.value || 0);
           }
+        }
+        if (filter.type === 'buysurge' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const buySurgeFilter = filter.rawValue as { multiplier?: number; executionStrength?: number };
+          // TODO: 실제 데이터와 연동 필요
+          // asset에 buyVolumeMultiplier (1시간 매수량/24시간 평균 매수량)와 
+          // executionStrength (매수총액/매도총액 * 100) 속성이 있다고 가정
+          // const assetMultiplier = (asset as any).buyVolumeMultiplier || 0;
+          // const assetExecutionStrength = (asset as any).executionStrength || 0;
+          // return assetMultiplier >= (buySurgeFilter.multiplier || 0) && 
+          //        assetExecutionStrength >= (buySurgeFilter.executionStrength || 0);
+          // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
+          return true;
+        }
+        if (filter.type === 'deposit' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const depositFilter = filter.rawValue as { multiplier?: number };
+          // TODO: 실제 데이터와 연동 필요
+          // asset에 depositMultiplier (최근 1시간 순입금액/직전 24시간 평균 순입금액) 속성이 있다고 가정
+          // const assetDepositMultiplier = (asset as any).depositMultiplier || 0;
+          // return assetDepositMultiplier >= (depositFilter.multiplier || 0);
+          // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
+          return true;
+        }
+        if (filter.type === 'profit' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const profitFilter = filter.rawValue as { amount?: number | null };
+          // TODO: 실제 데이터와 연동 필요
+          // asset에 unrealizedProfit (미실현 수익금 합계, 억원 단위) 속성이 있다고 가정
+          // const assetProfit = (asset as any).unrealizedProfit || 0;
+          // if (profitFilter.amount !== null && profitFilter.amount !== undefined && assetProfit < profitFilter.amount) {
+          //   return false;
+          // }
+          // return true;
+          // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
+          return true;
+        }
+        if (filter.type === 'beta' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const betaFilter = filter.rawValue as { direction?: 'same' | 'opposite'; multiplier?: number };
+          // TODO: 실제 데이터와 연동 필요
+          // asset에 beta (비트코인 대비 움직임 배수) 속성이 있다고 가정
+          // const assetBeta = (asset as any).beta || 0;
+          // const multiplier = betaFilter.multiplier || 1.0;
+          // if (betaFilter.direction === 'same') {
+          //   // 같은 방향: 베타가 양수이고 절댓값이 multiplier 이상
+          //   return assetBeta >= multiplier;
+          // } else {
+          //   // 반대 방향: 베타가 음수이고 절댓값이 multiplier 이상
+          //   return assetBeta <= -multiplier;
+          // }
+          // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
+          return true;
+        }
+        if (filter.type === 'volatility' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const volatilityFilter = filter.rawValue as { threshold?: number };
+          // TODO: 실제 데이터와 연동 필요
+          // asset에 volatility (당일 저가 대비 고가 차이, 퍼센트) 속성이 있다고 가정
+          // const assetVolatility = (asset as any).volatility || 0;
+          // const threshold = volatilityFilter.threshold || 0;
+          // return assetVolatility >= threshold;
+          // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
+          return true;
         }
         // Other filters can be added here
         return true;
@@ -666,25 +949,58 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
       const value = tempFilterValues[selectedFilterMenu];
       if (!value || (Array.isArray(value) && value.length === 0)) return;
 
-      if (currentFilter.type === 'range' && Array.isArray(value) && value.length === 2) {
+      if (currentFilter.type === 'range' && selectedFilterMenu === 'mcap') {
+        // 시가총액 필터: 여러개 선택 지원
+        if (Array.isArray(value) && value.length > 0) {
+          if (Array.isArray(value[0])) {
+            // 여러개 선택된 경우
+            const ranges = value as number[][];
+            if (ranges.length === 0) return;
+            
+            const labels: string[] = [];
+            ranges.forEach(([min, max]) => {
+              if (mcapFilterMode === 'rank' && max <= 10000) {
+                if (min === 1 && max <= 100) {
+                  labels.push(`${max}위권 이내`);
+                } else if (max === 9999) {
+                  labels.push(`${min}위 이상`);
+                } else {
+                  labels.push(`${min}위 ~ ${max}위`);
+                }
+              } else {
+                labels.push(`${formatCurrency(min)} ~ ${formatCurrency(max)}`);
+              }
+            });
+            displayValue = labels.join(', ');
+            rawValue = ranges;
+          } else if (value.length === 2) {
+            // 단일 선택인 경우
+            const [min, max] = value as number[];
+            if (min === currentFilter.min && max === currentFilter.max) {
+              return;
+            }
+            // 순위권 필터인지 확인
+            if (mcapFilterMode === 'rank' && max <= 10000) {
+              if (min === 1 && max <= 100) {
+                displayValue = `${max}위권 이내`;
+              } else if (max === 9999) {
+                displayValue = `${min}위 이상`;
+              } else {
+                displayValue = `${min}위 ~ ${max}위`;
+              }
+            } else {
+              displayValue = `${formatCurrency(min)} ~ ${formatCurrency(max)}`;
+            }
+            rawValue = value;
+          }
+        }
+      } else if (currentFilter.type === 'range' && Array.isArray(value) && value.length === 2) {
         const [min, max] = value as number[];
         if (min === currentFilter.min && max === currentFilter.max) {
           return;
         }
-        // 순위권 필터인지 확인
-        if (selectedFilterMenu === 'mcap' && mcapFilterMode === 'rank' && max <= 10000) {
-          if (min === 1 && max <= 100) {
-            displayValue = `${max}위권 이내`;
-          } else if (max === 9999) {
-            displayValue = `${min}위 이상`;
-          } else {
-            displayValue = `${min}위 ~ ${max}위`;
-          }
-          rawValue = value;
-        } else {
-          displayValue = `${formatCurrency(min)} ~ ${formatCurrency(max)}`;
-          rawValue = value;
-        }
+        displayValue = `${formatCurrency(min)} ~ ${formatCurrency(max)}`;
+        rawValue = value;
       } else if (Array.isArray(value)) {
         displayValue = value.map(v => {
           const option = currentFilter.options?.find(opt => opt.value === v);
@@ -817,61 +1133,35 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                 {/* Left Sidebar - Filter Menu */}
                 <div className="w-48 border-r bg-muted/30 p-4 overflow-y-auto">
                   <nav className="space-y-4">
-                    <div className="space-y-1">
-                      <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1">
-                        주요정보
+                    {filterGroups.map((group) => (
+                      <div key={group.id} className="space-y-1">
+                        <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1">
+                          {group.name}
+                        </div>
+                        {group.items.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setSelectedFilterMenu(item.id);
+                              // 필터 메뉴 변경 시 선택 상태 초기화
+                              if (item.id === 'rsi') {
+                                setRsiSelected(null);
+                              } else if (item.id === 'ma') {
+                                setMaSelected(null);
+                              }
+                            }}
+                            className={cn(
+                              'w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                              selectedFilterMenu === item.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                            )}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
                       </div>
-                      {mainInfoItems.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setSelectedFilterMenu(item.id);
-                            // 필터 메뉴 변경 시 선택 상태 초기화
-                            if (item.id === 'rsi') {
-                              setRsiSelected(null);
-                            } else if (item.id === 'ma') {
-                              setMaSelected(null);
-                            }
-                          }}
-                          className={cn(
-                            'w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                            selectedFilterMenu === item.id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          )}
-                        >
-                          {item.name}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="space-y-1 pt-2 border-t border-border">
-                      <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1">
-                        기술적분석
-                      </div>
-                      {technicalAnalysisItems.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setSelectedFilterMenu(item.id);
-                            // 필터 메뉴 변경 시 선택 상태 초기화
-                            if (item.id === 'rsi') {
-                              setRsiSelected(null);
-                            } else if (item.id === 'ma') {
-                              setMaSelected(null);
-                            }
-                          }}
-                          className={cn(
-                            'w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                            selectedFilterMenu === item.id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          )}
-                        >
-                          {item.name}
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </nav>
                 </div>
 
@@ -897,11 +1187,17 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                           <h3 className="text-xl font-semibold text-foreground mb-3">
                             {currentFilter.name}
                           </h3>
-                          {currentFilter.description && (
+                          {selectedFilterMenu === 'mcap' ? (
+                            <div className="space-y-2">
+                              <p className="text-sm text-muted-foreground">
+                                시가총액은 코인의 현재 가격에 유통량을 곱한 값이에요. 시가총액이 높을수록 시장에서 차지하는 비중이 크고, 안정적인 대형 코인으로 볼 수 있어요.
+                              </p>
+                            </div>
+                          ) : currentFilter.description ? (
                             <p className="text-sm text-muted-foreground">
                               {currentFilter.description}
                             </p>
-                          )}
+                          ) : null}
                         </div>
 
                         <div className="space-y-4">
@@ -970,57 +1266,53 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                           {currentFilter.type === 'range' && selectedFilterMenu === 'mcap' && (
                             <div className="space-y-6">
                               {/* 필터 모드 선택 */}
-                              <div className="flex gap-2 rounded-md bg-muted p-1">
-                                <button
-                                  onClick={() => {
-                                    setMcapFilterMode('range');
-                                    // 모드 변경 시 tempFilterValues 초기화 (순위권 필터인 경우)
-                                    if (tempFilterValues.mcap && Array.isArray(tempFilterValues.mcap) && tempFilterValues.mcap.length === 2) {
-                                      const [min, max] = tempFilterValues.mcap;
-                                      if (typeof min === 'number' && typeof max === 'number' && max <= 10000) {
+                              <div className="flex items-center justify-end gap-4">
+                                <div className="inline-flex gap-1 rounded-lg border border-border bg-background p-1 shrink-0">
+                                  <button
+                                    onClick={() => {
+                                      setMcapFilterMode('range');
+                                      // 모드 변경 시 tempFilterValues 초기화 (순위권 필터인 경우)
+                                      if (tempFilterValues.mcap) {
                                         const newValues = { ...tempFilterValues };
                                         delete newValues.mcap;
                                         setTempFilterValues(newValues);
                                       }
-                                    }
-                                  }}
-                                  className={cn(
-                                    'flex-1 px-4 py-2 rounded text-sm font-medium transition-colors',
-                                    mcapFilterMode === 'range'
-                                      ? 'bg-background text-foreground shadow-sm'
-                                      : 'text-muted-foreground hover:text-foreground'
-                                  )}
-                                >
-                                  시가총액 범위
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setMcapFilterMode('rank');
-                                    // 모드 변경 시 tempFilterValues 초기화 (시가총액 범위 필터인 경우)
-                                    if (tempFilterValues.mcap && Array.isArray(tempFilterValues.mcap) && tempFilterValues.mcap.length === 2) {
-                                      const [min, max] = tempFilterValues.mcap;
-                                      if (typeof min === 'number' && typeof max === 'number' && max > 10000) {
+                                    }}
+                                    className={cn(
+                                      'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
+                                      mcapFilterMode === 'range'
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    )}
+                                  >
+                                    시가총액 범위
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setMcapFilterMode('rank');
+                                      // 모드 변경 시 tempFilterValues 초기화 (시가총액 범위 필터인 경우)
+                                      if (tempFilterValues.mcap) {
                                         const newValues = { ...tempFilterValues };
                                         delete newValues.mcap;
                                         setTempFilterValues(newValues);
                                       }
-                                    }
-                                  }}
-                                  className={cn(
-                                    'flex-1 px-4 py-2 rounded text-sm font-medium transition-colors',
-                                    mcapFilterMode === 'rank'
-                                      ? 'bg-background text-foreground shadow-sm'
-                                      : 'text-muted-foreground hover:text-foreground'
-                                  )}
-                                >
-                                  순위권
-                                </button>
+                                    }}
+                                    className={cn(
+                                      'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
+                                      mcapFilterMode === 'rank'
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    )}
+                                  >
+                                    순위권
+                                  </button>
+                                </div>
                               </div>
 
                               {mcapFilterMode === 'range' && (
                                 <div className="space-y-3">
                                   <Label className="text-sm font-medium text-foreground">시가총액 범위 선택</Label>
-                                  <div className="grid grid-cols-2 gap-2">
+                                  <div className="grid grid-cols-2 gap-2.5">
                                     {[
                                       { label: '1000억 미만', min: 0, max: 100000000000 },
                                       { label: '1000억 ~ 5000억', min: 100000000000, max: 500000000000 },
@@ -1029,28 +1321,78 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                                       { label: '5조 ~ 10조', min: 5000000000000, max: 10000000000000 },
                                       { label: '10조 이상', min: 10000000000000, max: 100000000000000 },
                                     ].map((preset) => {
-                                      const isSelected = Array.isArray(tempFilterValues.mcap) && 
-                                        tempFilterValues.mcap.length === 2 &&
-                                        tempFilterValues.mcap[0] === preset.min &&
-                                        tempFilterValues.mcap[1] === preset.max;
+                                      const currentMcap = tempFilterValues.mcap;
+                                      let isSelected = false;
+                                      
+                                      // 다중 선택 지원: 배열의 배열인 경우
+                                      if (Array.isArray(currentMcap) && currentMcap.length > 0) {
+                                        if (Array.isArray(currentMcap[0])) {
+                                          // 여러개 선택된 경우
+                                          isSelected = (currentMcap as number[][]).some(
+                                            ([min, max]) => min === preset.min && max === preset.max
+                                          );
+                                        } else if (currentMcap.length === 2) {
+                                          // 단일 선택인 경우
+                                          isSelected = currentMcap[0] === preset.min && currentMcap[1] === preset.max;
+                                        }
+                                      }
+                                      
                                       return (
                                         <button
                                           key={preset.label}
                                           onClick={() => {
+                                            const currentMcap = tempFilterValues.mcap;
+                                            let newMcap: number[][] = [];
+                                            
+                                            if (Array.isArray(currentMcap) && currentMcap.length > 0 && Array.isArray(currentMcap[0])) {
+                                              // 이미 여러개 선택된 경우
+                                              newMcap = [...(currentMcap as number[][])];
+                                              const index = newMcap.findIndex(
+                                                ([min, max]) => min === preset.min && max === preset.max
+                                              );
+                                              if (index >= 0) {
+                                                // 이미 선택된 경우 제거
+                                                newMcap.splice(index, 1);
+                                              } else {
+                                                // 추가
+                                                newMcap.push([preset.min, preset.max]);
+                                              }
+                                            } else if (Array.isArray(currentMcap) && currentMcap.length === 2) {
+                                              // 기존 단일 선택이 있는 경우
+                                              const [min, max] = currentMcap as number[];
+                                              if (min === preset.min && max === preset.max) {
+                                                // 같은 항목 클릭 시 제거
+                                                newMcap = [];
+                                              } else {
+                                                // 다른 항목 추가
+                                                newMcap = [[min, max], [preset.min, preset.max]];
+                                              }
+                                            } else {
+                                              // 새로 선택
+                                              newMcap = [[preset.min, preset.max]];
+                                            }
+                                            
                                             setTempFilterValues({
                                               ...tempFilterValues,
-                                              mcap: [preset.min, preset.max],
+                                              mcap: newMcap.length === 1 ? newMcap[0] : newMcap,
                                             });
                                           }}
                                           className={cn(
-                                            'p-3 rounded-lg border-2 transition-all duration-200 text-left',
-                                            'hover:border-primary/50 hover:shadow-md',
+                                            'p-3.5 rounded-xl border-2 transition-all duration-200 text-left relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
                                             isSelected
-                                              ? 'border-primary bg-primary/5 shadow-sm'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
                                               : 'border-border bg-background'
                                           )}
                                         >
-                                          <span className="font-medium text-sm">{preset.label}</span>
+                                          <span className="font-medium text-sm block">{preset.label}</span>
+                                          {isSelected && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
                                         </button>
                                       );
                                     })}
@@ -1061,7 +1403,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                               {mcapFilterMode === 'rank' && (
                                 <div className="space-y-3">
                                   <Label className="text-sm font-medium text-foreground">순위권 선택</Label>
-                                  <div className="grid grid-cols-3 gap-2">
+                                  <div className="grid grid-cols-3 gap-2.5">
                                     {[
                                       { label: '10위권 이내', min: 1, max: 10 },
                                       { label: '50위권 이내', min: 1, max: 50 },
@@ -1070,28 +1412,78 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                                       { label: '200위 ~ 300위', min: 200, max: 300 },
                                       { label: '300위 이상', min: 300, max: 9999 },
                                     ].map((preset) => {
-                                      const isSelected = Array.isArray(tempFilterValues.mcap) && 
-                                        tempFilterValues.mcap.length === 2 &&
-                                        tempFilterValues.mcap[0] === preset.min &&
-                                        tempFilterValues.mcap[1] === preset.max;
+                                      const currentMcap = tempFilterValues.mcap;
+                                      let isSelected = false;
+                                      
+                                      // 다중 선택 지원: 배열의 배열인 경우
+                                      if (Array.isArray(currentMcap) && currentMcap.length > 0) {
+                                        if (Array.isArray(currentMcap[0])) {
+                                          // 여러개 선택된 경우
+                                          isSelected = (currentMcap as number[][]).some(
+                                            ([min, max]) => min === preset.min && max === preset.max
+                                          );
+                                        } else if (currentMcap.length === 2) {
+                                          // 단일 선택인 경우
+                                          isSelected = currentMcap[0] === preset.min && currentMcap[1] === preset.max;
+                                        }
+                                      }
+                                      
                                       return (
                                         <button
                                           key={preset.label}
                                           onClick={() => {
+                                            const currentMcap = tempFilterValues.mcap;
+                                            let newMcap: number[][] = [];
+                                            
+                                            if (Array.isArray(currentMcap) && currentMcap.length > 0 && Array.isArray(currentMcap[0])) {
+                                              // 이미 여러개 선택된 경우
+                                              newMcap = [...(currentMcap as number[][])];
+                                              const index = newMcap.findIndex(
+                                                ([min, max]) => min === preset.min && max === preset.max
+                                              );
+                                              if (index >= 0) {
+                                                // 이미 선택된 경우 제거
+                                                newMcap.splice(index, 1);
+                                              } else {
+                                                // 추가
+                                                newMcap.push([preset.min, preset.max]);
+                                              }
+                                            } else if (Array.isArray(currentMcap) && currentMcap.length === 2) {
+                                              // 기존 단일 선택이 있는 경우
+                                              const [min, max] = currentMcap as number[];
+                                              if (min === preset.min && max === preset.max) {
+                                                // 같은 항목 클릭 시 제거
+                                                newMcap = [];
+                                              } else {
+                                                // 다른 항목 추가
+                                                newMcap = [[min, max], [preset.min, preset.max]];
+                                              }
+                                            } else {
+                                              // 새로 선택
+                                              newMcap = [[preset.min, preset.max]];
+                                            }
+                                            
                                             setTempFilterValues({
                                               ...tempFilterValues,
-                                              mcap: [preset.min, preset.max],
+                                              mcap: newMcap.length === 1 ? newMcap[0] : newMcap,
                                             });
                                           }}
                                           className={cn(
-                                            'p-4 rounded-lg border-2 transition-all duration-200 text-center',
-                                            'hover:border-primary/50 hover:shadow-md',
+                                            'p-4 rounded-xl border-2 transition-all duration-200 text-center relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
                                             isSelected
-                                              ? 'border-primary bg-primary/5 shadow-sm'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
                                               : 'border-border bg-background'
                                           )}
                                         >
-                                          <span className="font-medium text-sm">{preset.label}</span>
+                                          <span className="font-medium text-sm block">{preset.label}</span>
+                                          {isSelected && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
                                         </button>
                                       );
                                     })}
@@ -1152,16 +1544,15 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                           {currentFilter.type === 'custom' && selectedFilterMenu === 'change' && (
                             <div className="space-y-6">
                               <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-foreground">기간 선택</Label>
-                                  <div className="flex gap-2 rounded-md bg-muted p-1">
+                                <div className="flex items-center justify-end gap-4">
+                                  <div className="inline-flex gap-1 rounded-lg border border-border bg-background p-1 shrink-0">
                                     <button
                                       onClick={() => setChangeFilterPeriod('today')}
                                       className={cn(
-                                        'flex-1 px-4 py-2 rounded text-sm font-medium transition-colors',
+                                        'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
                                         changeFilterPeriod === 'today'
-                                          ? 'bg-background text-foreground shadow-sm'
-                                          : 'text-muted-foreground hover:text-foreground'
+                                          ? 'bg-primary text-primary-foreground shadow-sm'
+                                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                       )}
                                     >
                                       24시간
@@ -1169,10 +1560,10 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                                     <button
                                       onClick={() => setChangeFilterPeriod('week')}
                                       className={cn(
-                                        'flex-1 px-4 py-2 rounded text-sm font-medium transition-colors',
+                                        'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
                                         changeFilterPeriod === 'week'
-                                          ? 'bg-background text-foreground shadow-sm'
-                                          : 'text-muted-foreground hover:text-foreground'
+                                          ? 'bg-primary text-primary-foreground shadow-sm'
+                                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                       )}
                                     >
                                       1주일
@@ -1180,10 +1571,10 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                                     <button
                                       onClick={() => setChangeFilterPeriod('month')}
                                       className={cn(
-                                        'flex-1 px-4 py-2 rounded text-sm font-medium transition-colors',
+                                        'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
                                         changeFilterPeriod === 'month'
-                                          ? 'bg-background text-foreground shadow-sm'
-                                          : 'text-muted-foreground hover:text-foreground'
+                                          ? 'bg-primary text-primary-foreground shadow-sm'
+                                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                       )}
                                     >
                                       1개월
@@ -1501,6 +1892,566 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                               </div>
                             </div>
                           )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'buysurge' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">1시간 매수량 배수</Label>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={[buySurgeMultiplier]}
+                                          onValueChange={(value) => setBuySurgeMultiplier(value[0])}
+                                          min={1.0}
+                                          max={10.0}
+                                          step={0.1}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">1.0배</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={buySurgeMultiplier.toFixed(1)}
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 1.0 && val <= 10.0) {
+                                                  setBuySurgeMultiplier(val);
+                                                }
+                                              }}
+                                              className="w-20 h-8 text-center text-sm"
+                                              step="0.1"
+                                              min="1.0"
+                                              max="10.0"
+                                            />
+                                            <span className="text-xs text-muted-foreground">배</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">10.0배</span>
+                                        </div>
+                                   
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <Label className="text-sm font-medium text-foreground">체결강도</Label>
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger>
+                                              <Info className="w-4 h-4 text-muted-foreground" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>체결강도는 매수총액/매도총액을 의미합니다.</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={[buySurgeExecutionStrength]}
+                                          onValueChange={(value) => setBuySurgeExecutionStrength(value[0])}
+                                          min={50}
+                                          max={200}
+                                          step={5}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">50%</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={buySurgeExecutionStrength}
+                                              onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (!isNaN(val) && val >= 50 && val <= 200) {
+                                                  setBuySurgeExecutionStrength(val);
+                                                }
+                                              }}
+                                              className="w-20 h-8 text-center text-sm"
+                                              step="5"
+                                              min="50"
+                                              max="200"
+                                            />
+                                            <span className="text-xs text-muted-foreground">% 이상</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">200%</span>
+                                        </div>
+                                        
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const buySurgeFilter: Filter = {
+                                          id: 'buysurge-custom',
+                                          type: 'buysurge',
+                                          label: '매수세 급증',
+                                          value: `1시간 매수량이 24시간 평균보다 ${buySurgeMultiplier.toFixed(1)}배 많고, 체결강도가 ${buySurgeExecutionStrength}% 이상인 코인`,
+                                          rawValue: {
+                                            type: 'buysurge',
+                                            multiplier: buySurgeMultiplier,
+                                            executionStrength: buySurgeExecutionStrength,
+                                          },
+                                        };
+                                        // 기존 매수세 급증 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'buysurge');
+                                        setActiveFilters([...otherFilters, buySurgeFilter]);
+                                      }}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'deposit' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">순입금액 배수</Label>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={[depositMultiplier]}
+                                          onValueChange={(value) => setDepositMultiplier(value[0])}
+                                          min={1.0}
+                                          max={10.0}
+                                          step={0.1}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">1.0배</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={depositMultiplier.toFixed(1)}
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 1.0 && val <= 10.0) {
+                                                  setDepositMultiplier(val);
+                                                }
+                                              }}
+                                              className="w-20 h-8 text-center text-sm"
+                                              step="0.1"
+                                              min="1.0"
+                                              max="10.0"
+                                            />
+                                            <span className="text-xs text-muted-foreground">배 이상</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">10.0배</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const depositFilter: Filter = {
+                                          id: 'deposit-custom',
+                                          type: 'deposit',
+                                          label: '거래소입금',
+                                          value: `최근 1시간 동안의 순입금액이 직전 24시간 평균 대비 ${depositMultiplier.toFixed(1)}배 이상 유입된 코인`,
+                                          rawValue: {
+                                            type: 'deposit',
+                                            multiplier: depositMultiplier,
+                                          },
+                                        };
+                                        // 기존 거래소입금 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'deposit');
+                                        setActiveFilters([...otherFilters, depositFilter]);
+                                      }}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'whaletrade' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                          onClick={() => setWhaleTradeType(whaleTradeType === 'whale_buy' ? null : 'whale_buy')}
+                                          className={cn(
+                                            'p-4 rounded-xl border-2 transition-all duration-200 text-left relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
+                                            whaleTradeType === 'whale_buy'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background'
+                                          )}
+                                        >
+                                          <div className="font-medium text-sm mb-1">고래 순매수</div>
+                                          <div className="text-xs text-muted-foreground">자산규모 상위 100명이 가장 많이 사는 종목</div>
+                                          {whaleTradeType === 'whale_buy' && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => setWhaleTradeType(whaleTradeType === 'whale_sell' ? null : 'whale_sell')}
+                                          className={cn(
+                                            'p-4 rounded-xl border-2 transition-all duration-200 text-left relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
+                                            whaleTradeType === 'whale_sell'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background'
+                                          )}
+                                        >
+                                          <div className="font-medium text-sm mb-1">고래 순매도</div>
+                                          <div className="text-xs text-muted-foreground">자산규모 상위 100명이 가장 많이 파는 종목</div>
+                                          {whaleTradeType === 'whale_sell' && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => setWhaleTradeType(whaleTradeType === 'trader_buy' ? null : 'trader_buy')}
+                                          className={cn(
+                                            'p-4 rounded-xl border-2 transition-all duration-200 text-left relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
+                                            whaleTradeType === 'trader_buy'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background'
+                                          )}
+                                        >
+                                          <div className="font-medium text-sm mb-1">거래왕 순매수</div>
+                                          <div className="text-xs text-muted-foreground">거래량 상위 100명이 가장 많이 사는 종목</div>
+                                          {whaleTradeType === 'trader_buy' && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => setWhaleTradeType(whaleTradeType === 'trader_sell' ? null : 'trader_sell')}
+                                          className={cn(
+                                            'p-4 rounded-xl border-2 transition-all duration-200 text-left relative',
+                                            'hover:border-primary/50 hover:bg-primary/5',
+                                            whaleTradeType === 'trader_sell'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background'
+                                          )}
+                                        >
+                                          <div className="font-medium text-sm mb-1">거래왕 순매도</div>
+                                          <div className="text-xs text-muted-foreground">거래량 상위 100명이 가장 많이 파는 종목</div>
+                                          {whaleTradeType === 'trader_sell' && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            </div>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        if (!whaleTradeType) return;
+                                        
+                                        const labels: Record<string, string> = {
+                                          'whale_buy': '고래 순매수',
+                                          'whale_sell': '고래 순매도',
+                                          'trader_buy': '거래왕 순매수',
+                                          'trader_sell': '거래왕 순매도',
+                                        };
+                                        
+                                        const whaleTradeFilter: Filter = {
+                                          id: 'whaletrade-custom',
+                                          type: 'whaletrade',
+                                          label: '큰손동향',
+                                          value: labels[whaleTradeType],
+                                          rawValue: {
+                                            type: 'whaletrade',
+                                            tradeType: whaleTradeType,
+                                          },
+                                        };
+                                        // 기존 큰손동향 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'whaletrade');
+                                        setActiveFilters([...otherFilters, whaleTradeFilter]);
+                                      }}
+                                      disabled={!whaleTradeType}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'beta' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">방향 선택</Label>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => setBetaDirection('same')}
+                                          className={cn(
+                                            'flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200',
+                                            betaDirection === 'same'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background hover:border-primary/50 hover:bg-primary/5'
+                                          )}
+                                        >
+                                          <span className="font-medium text-sm">같은 방향</span>
+                                        </button>
+                                        <button
+                                          onClick={() => setBetaDirection('opposite')}
+                                          className={cn(
+                                            'flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200',
+                                            betaDirection === 'opposite'
+                                              ? 'border-primary bg-primary/10 shadow-sm'
+                                              : 'border-border bg-background hover:border-primary/50 hover:bg-primary/5'
+                                          )}
+                                        >
+                                          <span className="font-medium text-sm">반대 방향</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">베타 배수</Label>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={[betaMultiplier]}
+                                          onValueChange={(value) => setBetaMultiplier(value[0])}
+                                          min={0.1}
+                                          max={5.0}
+                                          step={0.1}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">0.1배</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={betaMultiplier.toFixed(1)}
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 0.1 && val <= 5.0) {
+                                                  setBetaMultiplier(val);
+                                                }
+                                              }}
+                                              className="w-20 h-8 text-center text-sm"
+                                              step="0.1"
+                                              min="0.1"
+                                              max="5.0"
+                                            />
+                                            <span className="text-xs text-muted-foreground">배 이상</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">5.0배</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const directionLabel = betaDirection === 'same' ? '같은' : '반대';
+                                        const betaFilter: Filter = {
+                                          id: 'beta-custom',
+                                          type: 'beta',
+                                          label: '베타',
+                                          value: `비트코인과 ${directionLabel} 방향으로 ${betaMultiplier.toFixed(1)}배 이상 움직이는 종목`,
+                                          rawValue: {
+                                            type: 'beta',
+                                            direction: betaDirection,
+                                            multiplier: betaMultiplier,
+                                          },
+                                        };
+                                        // 기존 베타 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'beta');
+                                        setActiveFilters([...otherFilters, betaFilter]);
+                                      }}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'volatility' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">변동폭 기준</Label>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={[volatilityThreshold]}
+                                          onValueChange={(value) => setVolatilityThreshold(value[0])}
+                                          min={0.1}
+                                          max={50.0}
+                                          step={0.1}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">0.1%</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={volatilityThreshold.toFixed(1)}
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 0.1 && val <= 50.0) {
+                                                  setVolatilityThreshold(val);
+                                                }
+                                              }}
+                                              className="w-20 h-8 text-center text-sm"
+                                              step="0.1"
+                                              min="0.1"
+                                              max="50.0"
+                                            />
+                                            <span className="text-xs text-muted-foreground">% 이상</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">50.0%</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const volatilityFilter: Filter = {
+                                          id: 'volatility-custom',
+                                          type: 'volatility',
+                                          label: '일간 변동폭',
+                                          value: `당일 저가 대비 고가 차이가 ${volatilityThreshold.toFixed(1)}% 이상인 종목`,
+                                          rawValue: {
+                                            type: 'volatility',
+                                            threshold: volatilityThreshold,
+                                          },
+                                        };
+                                        // 기존 일간 변동폭 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'volatility');
+                                        setActiveFilters([...otherFilters, volatilityFilter]);
+                                      }}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentFilter.type === 'custom' && selectedFilterMenu === 'profit' && (
+                            <div className="space-y-6">
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-foreground">미실현 수익금 합계 (선택)</Label>
+                                      <div className="space-y-3">
+                                        <Slider
+                                          value={profitAmount !== null ? [profitAmount] : [100]}
+                                          onValueChange={(value) => setProfitAmount(value[0])}
+                                          min={0}
+                                          max={1000}
+                                          step={10}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-muted-foreground">0억원</span>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              value={profitAmount !== null ? profitAmount : ''}
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 0 && val <= 1000) {
+                                                  setProfitAmount(val);
+                                                } else if (e.target.value === '') {
+                                                  setProfitAmount(null);
+                                                }
+                                              }}
+                                              placeholder="선택 안함"
+                                              className="w-24 h-8 text-center text-sm"
+                                              step="10"
+                                              min="0"
+                                              max="1000"
+                                            />
+                                            <span className="text-xs text-muted-foreground">억원 이상</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">1000억원</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                  </div>
+
+                                  <div className="flex gap-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        if (profitAmount === null) return;
+                                        
+                                        const profitFilter: Filter = {
+                                          id: 'profit-custom',
+                                          type: 'profit',
+                                          label: '미실현수익',
+                                          value: `미실현 수익금 합계가 ${profitAmount}억원 이상인 코인`,
+                                          rawValue: {
+                                            type: 'profit',
+                                            amount: profitAmount,
+                                          },
+                                        };
+                                        // 기존 미실현수익 필터 제거하고 새 필터 추가
+                                        const otherFilters = activeFilters.filter(f => f.type !== 'profit');
+                                        setActiveFilters([...otherFilters, profitFilter]);
+                                      }}
+                                      disabled={profitAmount === null}
+                                      className="flex-1 h-11"
+                                    >
+                                      적용
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1509,39 +2460,43 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
               </div>
 
               {/* Bottom Bar */}
-              <div className="border-t px-6 py-4 flex items-center justify-between bg-muted/30">
-                <div className="flex items-center gap-2 flex-1">
-                  {activeFilters.map((filter) => (
-                    <div
-                      key={filter.id}
-                      className="flex items-center gap-1 px-3 py-1 bg-background border rounded-md text-sm"
-                    >
-                      <span className="text-muted-foreground">{filter.value || filter.label}</span>
-                      <button
-                        onClick={() => handleRemoveFilter(filter.id)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+              <div className="border-t bg-background">
+                {/* Active Filters */}
+                {activeFilters.length > 0 && (
+                  <div className="px-6 pt-4 pb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {activeFilters.map((filter) => (
+                        <div
+                          key={filter.id}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 border border-border/50 rounded-full text-xs"
+                        >
+                          <span className="text-foreground font-medium">{filter.value || filter.label}</span>
+                          <button
+                            onClick={() => handleRemoveFilter(filter.id)}
+                            className="hover:text-destructive transition-colors rounded-full hover:bg-destructive/10 p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="px-6 pb-6 pt-3 flex items-center justify-between gap-3">
+                  <button
                     onClick={handleResetFilters}
-                    className="h-8"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
                   >
-                    <RotateCcw className="w-3 h-3 mr-1" />
-                    초기화
-                  </Button>
+                    모든 필터 초기화
+                  </button>
                   <Button
-                    size="sm"
                     onClick={handleApplyFilter}
-                    className="h-8"
+                    className="h-11 px-6 font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
-                    {filteredAssets.length}개 코인보기
+                    <span className="text-base">{filteredAssets.length}개</span>
+                    <span className="text-sm ml-1 opacity-90">코인 보기</span>
                   </Button>
                 </div>
               </div>

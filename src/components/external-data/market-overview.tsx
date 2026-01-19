@@ -487,7 +487,7 @@ export function MarketOverview() {
                         테마
                     </TabsTrigger>
                     <TabsTrigger value="trending" className="text-lg font-semibold text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent px-0 pb-2 mr-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
-                        트렌딩
+                        신규상장
                     </TabsTrigger>
                     <TabsTrigger value="owned" className="text-lg font-semibold text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent px-0 pb-2 mr-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
                         보유 종목

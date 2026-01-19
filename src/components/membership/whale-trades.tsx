@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowDown, ArrowUp, Crown, Fish, TrendingDown, TrendingUp, Percent, BarChart, GitCompare, Zap, Sparkles, Shield, User } from 'lucide-react';
+import { ArrowDown, ArrowUp, Crown, Fish, TrendingDown, TrendingUp, Percent, BarChart, GitCompare, Zap, Sparkles, Shield, User, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -62,11 +63,11 @@ const whaleData = {
     { rank: 5, name: '비트코인', ticker: 'BTC', price: '98,179,000원', change: 0.18, img: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=032' },
   ],
   topVolatility: [
-    { rank: 1, name: '페페', ticker: 'PEPE', value: 15.8, unit: '%', img: 'https://cryptologos.cc/logos/pepe-pepe-logo.svg?v=032' },
-    { rank: 2, name: '월드코인', ticker: 'WLD', value: 12.4, unit: '%', img: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.svg?v=032' },
-    { rank: 3, name: '도지코인', ticker: 'DOGE', value: 9.8, unit: '%', img: 'https://cryptologos.cc/logos/dogecoin-doge-logo.svg?v=032' },
-    { rank: 4, name: '솔라나', ticker: 'SOL', value: 8.2, unit: '%', img: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=032' },
-    { rank: 5, name: '시바이누', ticker: 'SHIB', value: 7.5, unit: '%', img: 'https://cryptologos.cc/logos/shiba-inu-shib-logo.svg?v=032' },
+    { rank: 1, name: '페페', ticker: 'PEPE', value: 15.8, unit: '%', low: '0.015원', high: '0.019원', img: 'https://cryptologos.cc/logos/pepe-pepe-logo.svg?v=032' },
+    { rank: 2, name: '월드코인', ticker: 'WLD', value: 12.4, unit: '%', low: '5,800원', high: '6,600원', img: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.svg?v=032' },
+    { rank: 3, name: '도지코인', ticker: 'DOGE', value: 9.8, unit: '%', low: '205원', high: '225원', img: 'https://cryptologos.cc/logos/dogecoin-doge-logo.svg?v=032' },
+    { rank: 4, name: '솔라나', ticker: 'SOL', value: 8.2, unit: '%', low: '225,000원', high: '237,000원', img: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=032' },
+    { rank: 5, name: '시바이누', ticker: 'SHIB', value: 7.5, unit: '%', low: '0.033원', high: '0.037원', img: 'https://cryptologos.cc/logos/shiba-inu-shib-logo.svg?v=032' },
   ],
   topRvol: [
     { rank: 1, name: '월드코인', ticker: 'WLD', value: 3.8, unit: '배', img: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.svg?v=032' },
@@ -112,10 +113,17 @@ const TradeList = ({ title, data, type, description }: TradeListProps) => {
   return (
     <Card className="flex-1 bg-card border h-full">
       <CardHeader>
-        <CardTitle className="text-lg">
-          {title}
-        </CardTitle>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">
+              {title}
+            </CardTitle>
+            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+          </div>
+          <Link href={isBuy ? "/internal-data?tab=comparison&filter=buysurge&multiplier=2.0&executionStrength=100" : "/internal-data?tab=comparison&filter=deposit&multiplier=1.5"} className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -140,7 +148,7 @@ const TradeList = ({ title, data, type, description }: TradeListProps) => {
                         indicatorClassName={isBuy ? "bg-green-500" : "bg-red-500"}
                     />
                     <div className="text-xs font-bold text-right mt-1 text-foreground">
-                        평소보다 <span className={cn("font-bold", isBuy ? "text-green-500" : "text-red-500")}>{(item.strength / 100).toFixed(1)}배</span>
+                        <span className={cn("font-bold", isBuy ? "text-green-500" : "text-red-500")}>{(item.strength / 100).toFixed(1)}배</span>
                     </div>
                 </div>
               </div>
@@ -156,10 +164,19 @@ const UnrealizedPnlList = ({ title, data, description }: { title: string; data: 
   return (
     <Card className="flex-1 bg-card border h-full">
       <CardHeader>
-        <CardTitle className="text-lg">
-          {title}
-        </CardTitle>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">
+              {title}
+            </CardTitle>
+            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+          </div>
+          {title.includes('수익금') && (
+            <Link href="/internal-data?tab=comparison&filter=profit&amount=100" className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -314,10 +331,17 @@ const DepositVolumeList = ({ title, data, description }: { title: string; data: 
   return (
     <Card className="flex-1 bg-card border h-full">
       <CardHeader>
-        <CardTitle className="text-lg">
-          {title}
-        </CardTitle>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">
+              {title}
+            </CardTitle>
+            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+          </div>
+          <Link href="/internal-data?tab=comparison&filter=deposit&multiplier=1.5" className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -342,7 +366,7 @@ const DepositVolumeList = ({ title, data, description }: { title: string; data: 
                         indicatorClassName="bg-blue-500"
                     />
                     <div className="text-xs font-bold text-right mt-1 text-foreground">
-                        평소보다 <span className="font-bold text-blue-500">{(item.strength / 100).toFixed(1)}배</span>
+                        <span className="font-bold text-blue-500">{(item.strength / 100).toFixed(1)}배</span>
                     </div>
                 </div>
               </div>
@@ -390,13 +414,36 @@ const GeneralRankingList = ({ title, data, unitKey, positiveColor, negativeColor
     </Card>
 );
 
-const RankingList = ({ title, data, description }: { title: string, data: any[], description?: string }) => (
+const RankingList = ({ title, data, description }: { title: string, data: any[], description?: string }) => {
+  const getFilterUrl = () => {
+    if (title.includes('고래 순매수')) {
+      return "/internal-data?tab=comparison&filter=whaletrade&tradeType=whale_buy";
+    } else if (title.includes('고래 순매도')) {
+      return "/internal-data?tab=comparison&filter=whaletrade&tradeType=whale_sell";
+    } else if (title.includes('거래왕 순매수')) {
+      return "/internal-data?tab=comparison&filter=whaletrade&tradeType=trader_buy";
+    } else if (title.includes('거래왕 순매도')) {
+      return "/internal-data?tab=comparison&filter=whaletrade&tradeType=trader_sell";
+    }
+    return "/internal-data";
+  };
+
+  return (
     <Card className="bg-card border h-full">
         <CardHeader>
-            <CardTitle className="text-lg">
-                {title}
-            </CardTitle>
-            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-lg">
+                    {title}
+                </CardTitle>
+                {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+              </div>
+              {(title.includes('고래 순매수') || title.includes('고래 순매도') || title.includes('거래왕 순매수') || title.includes('거래왕 순매도')) && (
+                <Link href={getFilterUrl()} className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              )}
+            </div>
         </CardHeader>
         <CardContent>
             <div className="space-y-4">
@@ -427,30 +474,31 @@ const RankingList = ({ title, data, description }: { title: string, data: any[],
             </div>
         </CardContent>
     </Card>
-);
+  );
+};
 
-const VolatilitySignalList = ({ title, icon: Icon, data }: { title: string, icon: React.ElementType, data: any[] }) => {
-    const getSignal = (value: number) => {
-        if (value > 10) return { light: '🔴', text: '변동성이 매우 높으니 주의가 필요해요.' };
-        if (value > 5) return { light: '🟡', text: '평소보다 변동성이 높아요.' };
-        return { light: '🟢', text: '안정적인 흐름을 보이고 있어요.' };
-    };
-
+const VolatilitySignalList = ({ title, icon: Icon, data, description }: { title: string, icon: React.ElementType, data: any[], description?: string }) => {
     return (
         <Card className="bg-card border h-full">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Icon className="w-5 h-5 text-blue-500" />
-                    {title}
-                </CardTitle>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                        {title}
+                    </CardTitle>
+                    {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+                  </div>
+                  <Link href="/internal-data?tab=comparison&filter=volatility&volatilityThreshold=10.0" className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                     {data.map((item) => {
-                        const signal = getSignal(item.value);
                         return (
                             <div key={item.rank} className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1">
                                     <span className="text-sm font-bold text-muted-foreground w-4 text-center">{item.rank}</span>
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage src={item.img} alt={item.name} />
@@ -458,10 +506,16 @@ const VolatilitySignalList = ({ title, icon: Icon, data }: { title: string, icon
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="font-bold text-sm">{item.name}</div>
-                                        <div className="text-xs text-muted-foreground">{signal.text}</div>
                                     </div>
                                 </div>
-                                <span className="text-2xl">{signal.light}</span>
+                                <div className="text-right">
+                                    <div className="font-bold text-sm text-primary">{item.value.toFixed(1)}%</div>
+                                    {item.low && item.high && (
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            {item.low}~{item.high}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )
                     })}
@@ -471,34 +525,54 @@ const VolatilitySignalList = ({ title, icon: Icon, data }: { title: string, icon
     );
 };
 
-const RvolList = ({ title, icon: Icon, data }: { title: string, icon: React.ElementType, data: any[] }) => {
+const RvolList = ({ title, icon: Icon, data }: { title: string; icon: React.ElementType; data: any[] }) => {
+    const maxValue = Math.max(...data.map(item => item.value), 0);
+
     return (
         <Card className="bg-card border h-full">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Icon className="w-5 h-5 text-blue-500" />
-                    {title}
-                </CardTitle>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                        {title}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      최근 7일 평균 대비 24시간 거래량 급증 종목입니다.
+                    </p>
+                  </div>
+                  <Link href="/internal-data?tab=comparison&filter=volume" className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                     {data.map((item) => {
                         return (
-                            <div key={item.rank} className="flex items-start justify-between">
+                            <div key={item.rank} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm font-bold text-muted-foreground w-4 text-center">{item.rank}</span>
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage src={item.img} alt={item.name} />
                                         <AvatarFallback>{item.ticker.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <div className="flex-1">
+                                    <div>
                                         <div className="font-bold text-sm">{item.name}</div>
-                                        <div className="text-xs text-muted-foreground">거래량이 한달 일평균보다 많아요.</div>
+                                        <div className="text-xs text-muted-foreground">{item.ticker}</div>
                                     </div>
                                 </div>
-                                 <div className="font-bold text-sm text-primary">
-                                    {item.value.toLocaleString()}배
-                                 </div>
+                                <div className="flex items-center gap-2 w-2/5">
+                                    <div className="w-full">
+                                        <Progress 
+                                            value={(item.value / maxValue) * 100} 
+                                            className="h-1.5 bg-muted/50"
+                                            indicatorClassName="bg-yellow-500"
+                                        />
+                                        <div className="text-xs font-bold text-right mt-1 text-foreground">
+                                            <span className="font-bold text-yellow-500">{item.value.toLocaleString()}배</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )
                     })}
@@ -508,29 +582,33 @@ const RvolList = ({ title, icon: Icon, data }: { title: string, icon: React.Elem
     );
 };
 
-const BetaStyleList = ({ title, icon: Icon, data }: { title: string, icon: React.ElementType, data: any[] }) => {
-    const getStyle = (value: number) => {
-        if (value < 0) return { text: `비트코인과 반대로 움직여요.` };
-        if (value > 1.2) return { text: `비트코인보다 더 공격적으로 움직여요.` };
-        if (value < 0.8) return { text: `비트코인보다 더 방어적으로 움직여요.` };
-        return { text: `비트코인과 거의 비슷하게 움직여요.` };
+const BetaStyleList = ({ title, icon: Icon, data, description }: { title: string, icon: React.ElementType, data: any[], description?: string }) => {
+    const getDirection = (value: number) => {
+        return value >= 0 ? '같은 방향' : '반대 방향';
     };
 
     return (
         <Card className="bg-card border h-full">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Icon className="w-5 h-5 text-blue-500" />
-                    {title}
-                </CardTitle>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                        {title}
+                    </CardTitle>
+                    {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+                  </div>
+                  <Link href="/internal-data?tab=comparison&filter=beta&betaDirection=same&betaMultiplier=1.0" className="text-muted-foreground hover:text-foreground transition-colors mt-1">
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                     {data.map((item) => {
-                        const style = getStyle(item.value);
+                        const direction = getDirection(item.value);
                         return (
                             <div key={item.rank} className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1">
                                     <span className="text-sm font-bold text-muted-foreground w-4 text-center">{item.rank}</span>
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage src={item.img} alt={item.name} />
@@ -538,11 +616,11 @@ const BetaStyleList = ({ title, icon: Icon, data }: { title: string, icon: React
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="font-bold text-sm">{item.name}</div>
-                                        <div className="text-xs text-muted-foreground">{style.text}</div>
                                     </div>
                                 </div>
-                                <div className="font-bold text-sm text-primary">
-                                    {Math.abs(item.value).toLocaleString()}배
+                                <div className="text-right">
+                                    <div className={cn("text-xs", direction === '같은 방향' ? 'text-green-500' : 'text-red-500')}>{direction}</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">{Math.abs(item.value).toLocaleString()}배</div>
                                 </div>
                             </div>
                         )
@@ -565,12 +643,12 @@ export function WhaleTrades() {
                   title="매수세 급증 Top 5" 
                   data={whaleData.topBuys} 
                   type="buy" 
-                  description="평소 대비 매수량이 급증한 종목입니다."
+                  description="24시간 평균 대비 최근 1시간 매수량 급증 종목입니다."
                 />
                 <DepositVolumeList 
                     title="거래소입금 Top 5" 
                     data={whaleData.netDeposit} 
-                    description="최근 24시간동안 거래소 유입이 가장 큰 종목입니다."
+                    description="24시간 평균 대비 최근 1시간 순입금 급증 종목입니다."
                 />
             </div>
         </div>
@@ -584,14 +662,14 @@ export function WhaleTrades() {
                 description="빗썸 전체 유저들의 미실현 수익금 합계입니다."
             />
                 <RankingList 
-                    title="고래 상위매수" 
+                    title="고래 순매수 Top 5" 
                     data={whaleData.topWhaleBuys} 
-                    description="자산규모 상위 100명이 가장 많이 사는 종목입니다."
+                    description="최근 7일 자산규모 상위 100명이 가장 많이 사는 종목입니다."
                 />
                 <RankingList 
-                    title="거래왕 상위매수" 
+                    title="거래왕 순매수 Top 5" 
                     data={whaleData.topTraderBuys} 
-                    description="거래량 상위 100명이 가장 많이 사는 종목입니다."
+                    description="최근 7일 거래량 상위 100명이 가장 많이 사는 종목입니다."
                 />
             </div>
         </div>
@@ -599,9 +677,9 @@ export function WhaleTrades() {
         <div className="pt-8 border-t">
             <h2 className="text-lg font-semibold text-foreground mb-6">주요 기술적 지표</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <RvolList title="거래량 랭킹" icon={BarChart} data={whaleData.topRvol} />
-                <VolatilitySignalList title="변동성 신호등" icon={Percent} data={whaleData.topVolatility} />
-                <BetaStyleList title="비트코인 대비 움직임" icon={Shield} data={whaleData.beta} />
+                <RvolList title="주간 거래 활성도" icon={BarChart} data={whaleData.topRvol} />
+                <VolatilitySignalList title="일간 변동폭" icon={Percent} data={whaleData.topVolatility} description="당일 저가 대비 고가의 차이를 나타냅니다." />
+                <BetaStyleList title="비트코인 대비 움직임" icon={Shield} data={whaleData.beta} description="비트코인 등락 대비 해당 종목의 민감도를 나타냅니다." />
             </div>
         </div>
     </div>

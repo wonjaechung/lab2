@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 export function TierBenefitCalculator() {
-  const nextTier = 'BLACK';
-  const estimatedBenefit = 1400000;
+  const nextTier = '블루';
+  const estimatedBenefit = 10000;
 
   return (
     <Card className="h-full flex flex-col">

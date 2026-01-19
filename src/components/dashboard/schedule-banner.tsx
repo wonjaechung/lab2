@@ -13,7 +13,7 @@ export function ScheduleBanner() {
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <button 
-          className="w-full h-full bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-center justify-between transition-all active:scale-[0.99] group text-left"
+          className="w-full h-full bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between transition-all active:scale-[0.99] group text-left"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">

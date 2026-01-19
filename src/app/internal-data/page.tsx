@@ -81,6 +81,13 @@ function InternalDataContent() {
     range: searchParams.get('range'),
     crossover: searchParams.get('crossover'),
     category: searchParams.get('category'),
+    multiplier: searchParams.get('multiplier'),
+    executionStrength: searchParams.get('executionStrength'),
+    tradeType: searchParams.get('tradeType'),
+    amount: searchParams.get('amount'),
+    betaDirection: searchParams.get('betaDirection'),
+    betaMultiplier: searchParams.get('betaMultiplier'),
+    volatilityThreshold: searchParams.get('volatilityThreshold'),
   };
 
   return (

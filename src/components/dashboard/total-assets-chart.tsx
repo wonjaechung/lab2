@@ -17,8 +17,26 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// Fear & Greed Index: 0-100
+const fearGreedIndex = 48;
+const fearGreedHistory = {
+    lastWeek: 45,
+    lastMonth: 42,
+};
+const getFearGreedSentiment = (index: number) => {
+    if (index <= 20) return { text: "극심한 공포", color: "text-red-500", progressColor: "stroke-red-500" };
+    if (index <= 45) return { text: "공포", color: "text-orange-500", progressColor: "stroke-orange-500" };
+    if (index <= 55) return { text: "중립", color: "text-yellow-500", progressColor: "stroke-yellow-500" };
+    if (index <= 80) return { text: "탐욕", color: "text-green-500", progressColor: "stroke-green-500" };
+    return { text: "극심한 탐욕", color: "text-green-600", progressColor: "stroke-green-600" };
+}
+
 // Altcoin Season Index: 0-100 (0: Bitcoin season, 100: Altcoin season)
 const altcoinIndex = 22;
+const altcoinHistory = {
+    lastWeek: 20,
+    lastMonth: 18,
+};
 const getIndexSentiment = (index: number) => {
     if (index <= 25) return { text: "비트코인 시즌", color: "text-green-500", progressColor: "stroke-green-500" };
     if (index <= 75) return { text: "중립", color: "text-yellow-500", progressColor: "stroke-yellow-500" };
@@ -74,7 +92,17 @@ const DominanceHistoryItem = ({ label, data }: { label: string, data: { btc: num
     )
 }
 
+const IndexHistoryItem = ({ label, value }: { label: string, value: number }) => {
+    return (
+        <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-muted-foreground">{label}</span>
+            <span className="text-sm font-bold text-foreground">{value}</span>
+        </div>
+    )
+}
+
 export function TotalAssetsChart() {
+  const fearGreedSentiment = getFearGreedSentiment(fearGreedIndex);
   const sentiment = getIndexSentiment(altcoinIndex);
 
   return (
@@ -84,13 +112,54 @@ export function TotalAssetsChart() {
             <div>
                 <CardTitle className="text-lg font-semibold text-foreground">시장 주도권은 어디에 있을까?</CardTitle>
                 <CardDescription>
-                  주요 자산의 도미넌스와 알트코인 시즌 지수를 통해 현재 시장의 주도 세력을 파악해보세요.
+                  공포탐욕지수로 시장 심리를 확인하고, 알트코인 시즌 지수와 주요 자산의 도미넌스를 통해 현재 시장의 주도 세력을 파악해보세요.
                 </CardDescription>
             </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            <div className="flex flex-col items-start justify-center">
+                <div className="flex items-center gap-2 text-left w-full mb-2">
+                    <h4 className="font-bold">공포탐욕지수</h4>
+                     <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-[240px]">시장 참여자들의 감정 상태를 나타내는 지표입니다. 0에 가까울수록 공포, 100에 가까울수록 탐욕을 의미합니다.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                </div>
+                <div className="relative w-40 h-40 self-center">
+                    <svg className="w-full h-full" viewBox="0 0 36 36">
+                        <path
+                            className="text-muted/30"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                        />
+                        <path
+                            className={cn("transition-all duration-500", fearGreedSentiment.progressColor)}
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            strokeDasharray={`${fearGreedIndex}, 100`}
+                            transform="rotate(-90 18 18)"
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className={cn("text-3xl font-bold", fearGreedSentiment.color)}>{fearGreedIndex}</span>
+                        <span className={cn("text-sm font-semibold mt-1", fearGreedSentiment.color)}>{fearGreedSentiment.text}</span>
+                    </div>
+                </div>
+            </div>
+            
             <div className="flex flex-col items-start justify-center">
                 <div className="flex items-center gap-2 text-left w-full mb-2">
                     <h4 className="font-bold">알트코인 시즌 지수</h4>
@@ -105,7 +174,7 @@ export function TotalAssetsChart() {
                       </Tooltip>
                     </TooltipProvider>
                 </div>
-                <div className="relative w-48 h-48 self-center">
+                <div className="relative w-40 h-40 self-center">
                     <svg className="w-full h-full" viewBox="0 0 36 36">
                         <path
                             className="text-muted/30"
@@ -126,8 +195,8 @@ export function TotalAssetsChart() {
                         />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={cn("text-4xl font-bold", sentiment.color)}>{altcoinIndex}</span>
-                        <span className={cn("text-base font-semibold mt-1", sentiment.color)}>{sentiment.text}</span>
+                        <span className={cn("text-3xl font-bold", sentiment.color)}>{altcoinIndex}</span>
+                        <span className={cn("text-sm font-semibold mt-1", sentiment.color)}>{sentiment.text}</span>
                     </div>
                 </div>
             </div>

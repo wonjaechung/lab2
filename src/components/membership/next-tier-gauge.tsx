@@ -13,11 +13,11 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '../ui/badge';
 
 export function NextTierGauge() {
-  const currentTier = 'ORANGE';
-  const nextTier = 'BLACK';
-  const remainingAmount = 300000000;
+  const currentTier = '화이트';
+  const nextTier = '블루';
+  const remainingAmount = 2000000;
   const progress =
-    100 - (remainingAmount / (remainingAmount + 700000000)) * 100;
+    100 - (remainingAmount / (remainingAmount + 7000000)) * 100;
   const daysLeft = 5;
 
   return (

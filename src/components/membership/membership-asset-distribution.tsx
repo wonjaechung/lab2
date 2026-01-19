@@ -130,8 +130,8 @@ export function MembershipAssetDistribution() {
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                     <div>
                         <div className="grid grid-cols-2 gap-4">
-                           <AssetList title="BLACK 등급 수익률 TOP3" assets={marketData.topGainers} type="gainer" />
-                           <AssetList title="BLACK 등급 수익률 BOTTOM3" assets={marketData.topLosers} type="loser" />
+                           <AssetList title="화이트 등급 수익률 TOP3" assets={marketData.topGainers} type="gainer" />
+                           <AssetList title="화이트 등급 수익률 BOTTOM3" assets={marketData.topLosers} type="loser" />
                         </div>
                     </div>
                     <div className="h-80 w-full">

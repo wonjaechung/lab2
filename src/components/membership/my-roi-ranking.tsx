@@ -49,7 +49,7 @@ export function MyRoiRanking() {
         </div>
         <div className="mt-4">
           <p className="font-bold text-foreground">
-            당신은 BLACK 등급 내 상위 {userRank}%의 고수입니다.
+            당신은 화이트 등급 내 상위 {userRank}%의 고수입니다.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
             포트폴리오를 공유하고 다른 고수들의 투자 현황을 확인해보세요.

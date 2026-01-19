@@ -35,7 +35,7 @@ const initialAssetDistributionData = [
     ctaLink: '#', // Placeholder for lending page
   },
   {
-    label: '밸런스',
+    label: '분산투자',
     description: '코인 10-50%',
     sub: '(분산)',
     percentage: 45,

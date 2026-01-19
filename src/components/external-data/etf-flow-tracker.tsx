@@ -15,12 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { BarChartBig, Zap, ChevronDown } from 'lucide-react';
+import { BarChartBig, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
-import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { CorporateTreasuryTracker } from './corporate-treasury-tracker';
 
 type Timeframe = '1W' | '1M' | '1Y' | 'All';
 
@@ -63,15 +63,12 @@ const assetColors: { [key: string]: string } = {
   btc: '#F7931A',
   eth: '#627EEA',
   sol: '#14F195',
-  xrp: '#FFD700',
+  xrp: '#23292F',
   BTC: '#F7931A',
   ETH: '#627EEA',
-  XRP: '#FFD700',
+  XRP: '#B0B0B0',
   SOL: '#14F195',
   BTC_Price: '#22C55E',
-  ETH_Price: '#627EEA',
-  XRP_Price: '#FFD700',
-  SOL_Price: '#14F195',
 };
 
 const formatKoreanNumber = (value: number) => {
@@ -145,7 +142,7 @@ const EtfTable = ({ data, totalAUM, assetName }: { data: {rank: number, ticker: 
     </div>
 )};
 
-const generateChartData = (timeframe: Timeframe, asset: string) => {
+const generateChartData = (timeframe: Timeframe) => {
   let days = 30;
   if (timeframe === '1W') days = 7;
   if (timeframe === '1M') days = 30;
@@ -153,31 +150,14 @@ const generateChartData = (timeframe: Timeframe, asset: string) => {
   if (timeframe === 'All') days = 500;
   
   const data = [];
-  
-  // 각 자산별 초기 가격 설정
-  const initialPrices: { [key: string]: number } = {
-    BTC: 65000,
-    ETH: 3500,
-    XRP: 0.52,
-    SOL: 150,
-  };
-  
-  let price = initialPrices[asset] || 65000;
+  let btcPrice = 65000;
   let accumulatedAUM = { BTC: 50000, ETH: 25000, XRP: 10000, SOL: 8000 };
-
-  // 각 자산별 가격 변동폭 설정
-  const priceVolatility: { [key: string]: number } = {
-    BTC: 2000,
-    ETH: 200,
-    XRP: 0.02,
-    SOL: 10,
-  };
 
   for (let i = days -1; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     
-    price += (Math.random() - 0.5) * (priceVolatility[asset] || 2000);
+    btcPrice += (Math.random() - 0.5) * 2000;
 
     const btcFlow = (Math.random() - 0.48) * 800;
     const ethFlow = (Math.random() - 0.49) * 400;
@@ -189,54 +169,52 @@ const generateChartData = (timeframe: Timeframe, asset: string) => {
     accumulatedAUM.XRP += xrpFlow;
     accumulatedAUM.SOL += solFlow;
 
-    const flowData: any = {
-      date: date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-    };
-
     if (timeframe === '1W' || timeframe === '1M') {
-      flowData.BTC = Math.floor(btcFlow);
-      flowData.ETH = Math.floor(ethFlow);
-      flowData.XRP = Math.floor(xrpFlow);
-      flowData.SOL = Math.floor(solFlow);
+        data.push({
+            date: date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+            BTC: Math.floor(btcFlow),
+            ETH: Math.floor(ethFlow),
+            XRP: Math.floor(xrpFlow),
+            SOL: Math.floor(solFlow),
+            BTC_Price: btcPrice,
+        });
     } else {
-      flowData.BTC = Math.floor(accumulatedAUM.BTC);
-      flowData.ETH = Math.floor(accumulatedAUM.ETH);
-      flowData.XRP = Math.floor(accumulatedAUM.XRP);
-      flowData.SOL = Math.floor(accumulatedAUM.SOL);
+        data.push({
+            date: date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+            BTC: Math.floor(accumulatedAUM.BTC),
+            ETH: Math.floor(accumulatedAUM.ETH),
+            XRP: Math.floor(accumulatedAUM.XRP),
+            SOL: Math.floor(accumulatedAUM.SOL),
+            BTC_Price: btcPrice,
+        });
     }
-
-    // 각 자산별 가격 추가
-    flowData[`${asset}_Price`] = asset === 'XRP' ? parseFloat(price.toFixed(3)) : Math.floor(price);
-    
-    data.push(flowData);
   }
   return data;
 };
 
-const CustomTooltip = ({ active, payload, label, asset }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const priceKey = `${asset}_Price`;
-    const flowPayload = payload.filter((p: any) => !p.dataKey.includes('_Price'));
-    const pricePayload = payload.find((p: any) => p.dataKey === priceKey);
+    const flowPayload = payload.filter((p: any) => p.dataKey !== 'BTC_Price');
+    const pricePayload = payload.find((p: any) => p.dataKey === 'BTC_Price');
+    const total = flowPayload.reduce((sum: number, p: any) => sum + p.value, 0);
 
     return (
       <div className="bg-background/90 backdrop-blur-sm p-3 border rounded-lg shadow-xl text-xs z-50">
         <p className="font-bold mb-1">{label}</p>
         {flowPayload.map((p: any) => (
             <p key={p.dataKey} className="flex justify-between gap-4" style={{ color: p.color }}>
-                <span>{p.dataKey} 순유입</span>
+                <span>{p.dataKey}</span>
                 <span className="font-mono">{p.value >= 0 ? '+' : ''}{formatKoreanNumber(p.value)}</span>
             </p>
         ))}
+         <p className="flex justify-between gap-4 font-semibold mt-1 pt-1 border-t">
+            <span>총합</span>
+            <span className="font-mono">{total >= 0 ? '+' : ''}{formatKoreanNumber(total)}</span>
+        </p>
          {pricePayload && (
-            <p className="flex justify-between gap-4 mt-1 pt-1 border-t" style={{ color: '#FFD700' }}>
-                <span>{asset} 가격</span>
-                <span className="font-mono">
-                    ${asset === 'XRP' 
-                        ? pricePayload.value.toFixed(3)
-                        : pricePayload.value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})
-                    }
-                </span>
+            <p className="flex justify-between gap-4 mt-1" style={{ color: pricePayload.color }}>
+                <span>BTC 가격</span>
+                <span className="font-mono">${pricePayload.value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</span>
             </p>
          )}
       </div>
@@ -247,145 +225,76 @@ const CustomTooltip = ({ active, payload, label, asset }: any) => {
 
 const chartAssets = ['BTC', 'ETH', 'XRP', 'SOL'];
 
-const SingleAssetChartView = ({asset}: {asset: string}) => {
-    const [timeframe, setTimeframe] = useState<Timeframe>('1M');
-    const [chartData, setChartData] = useState<any[] | null>(null);
-    const color = assetColors[asset as keyof typeof assetColors];
-
-    useEffect(() => {
-        setChartData(null);
-        const timer = setTimeout(() => {
-            setChartData(generateChartData(timeframe, asset));
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [timeframe, asset]);
-
-    const isFlowView = timeframe === '1W' || timeframe === '1M';
-    const totalFlow = chartData ? (isFlowView 
-        ? chartData.reduce((sum, item) => sum + (item[asset as keyof typeof item] as number), 0)
-        : (chartData[chartData.length - 1]?.[asset as keyof typeof chartData[0]] as number) || 0) : 0;
-
-    const timeframeLabel = timeframe === '1W' ? '주간' : timeframe === '1M' ? '월간' : timeframe === '1Y' ? '연간' : '전체';
-    const flowType = totalFlow > 0 ? '유입' : '유출';
-    const absFlow = Math.abs(totalFlow);
-
+const ChartView = ({timeframe, activeAssets, chartData}: {timeframe: Timeframe, activeAssets: string[], chartData: any[]}) => {
     return (
-        <Card>
-            <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold">{asset} 현물 ETF 흐름</CardTitle>
-                    <div className="flex items-center gap-3">
-                        <div className={`font-mono text-sm font-semibold ${
-                            totalFlow > 0 ? 'text-red-500' : 'text-blue-500'
-                        }`}>
-                            {timeframeLabel} {totalFlow >= 0 ? '' : '-'}{formatKoreanNumber(absFlow)} {flowType}
-                        </div>
-                        <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
-                            {(['1W', '1M', '1Y', 'All'] as Timeframe[]).map((tf) => (
-                                <Button
-                                key={tf}
-                                size="sm"
-                                variant={timeframe === tf ? 'secondary' : 'ghost'}
-                                onClick={() => setTimeframe(tf)}
-                                className="h-6 px-2 text-xs rounded-sm"
-                                >
-                                {tf}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {chartData ? (
-                    <div className='h-64 w-full font-sans text-xs relative select-none px-2'>
-                        <div className="absolute top-0 left-2 text-muted-foreground font-semibold z-10 text-xs">순유입</div>
-                        <div className="absolute top-0 right-2 text-foreground font-semibold flex items-center justify-end gap-1.5 z-10 text-xs">
-                            <div className="w-2.5 h-0.5 rounded-full bg-yellow-500"></div>
-                            {asset} 가격
-                        </div>
+        <div className='h-full w-full font-sans text-xs relative select-none px-2'>
+            <div className="absolute top-0 left-2 text-muted-foreground font-semibold z-10 text-xs">순유입</div>
+            <div className="absolute top-0 right-2 text-foreground font-semibold flex items-center justify-end gap-1.5 z-10 text-xs">
+                <div className="w-2.5 h-0.5 bg-green-500 rounded-full"></div>
+                BTC 가격
+            </div>
 
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border)/0.5)" />
-                            <XAxis 
-                                dataKey="date" 
-                                stroke="hsl(var(--muted-foreground))" 
-                                fontSize={12} 
-                                tickLine={false} 
-                                axisLine={false} 
-                                tickMargin={8} 
-                                minTickGap={30}
-                                padding={{ left: 10, right: 10 }}
-                            />
-                            <YAxis 
-                                yAxisId="left"
-                                stroke="hsl(var(--muted-foreground))" 
-                                fontSize={12} 
-                                tickLine={false} 
-                                axisLine={false} 
-                                width={40}
-                                tickFormatter={(val) => {
-                                    if (val === 0) return '0';
-                                    if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(0)}조`;
-                                    return `${val}억`;
-                                }}
-                            />
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                width={50}
-                                domain={asset === 'XRP' 
-                                    ? ['dataMin - 0.01', 'dataMax + 0.01']
-                                    : asset === 'BTC'
-                                    ? ['dataMin - 1000', 'dataMax + 1000']
-                                    : ['dataMin - 50', 'dataMax + 50']
-                                }
-                                tickFormatter={(val) => {
-                                    if (asset === 'XRP') {
-                                        return `$${val.toFixed(3)}`;
-                                    }
-                                    if (asset === 'BTC') {
-                                        return `$${(val / 1000).toFixed(0)}k`;
-                                    }
-                                    // ETH, SOL 등은 그냥 달러로 표시
-                                    return `$${val.toFixed(0)}`;
-                                }}
-                            />
-                            <RechartsTooltip content={<CustomTooltip asset={asset} />} cursor={{ fill: 'hsl(var(--accent)/0.1)' }} />
-                            
-                            <Bar 
-                                yAxisId="left"
-                                dataKey={asset} 
-                                radius={[2,2,0,0]}
-                                barSize={18}
-                            >
-                                {chartData.map((entry, index) => {
-                                    const value = entry[asset as keyof typeof entry] as number;
-                                    const fillColor = value >= 0 ? '#22C55E' : '#EF4444'; // 초록색(유입) / 빨간색(유출)
-                                    return <Cell key={`cell-${index}`} fill={fillColor} />;
-                                })}
-                            </Bar>
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey={`${asset}_Price`}
-                                stroke="#FFD700"
-                                strokeWidth={2}
-                                dot={false}
-                            />
-                            </ComposedChart>
-                        </ResponsiveContainer>
-                    </div>
-                ) : (
-                    <Skeleton className="h-64 w-full" />
-                )}
-            </CardContent>
-        </Card>
+             <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border)/0.5)" />
+                    <XAxis 
+                        dataKey="date" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tickMargin={8} 
+                        minTickGap={30}
+                        padding={{ left: 10, right: 10 }}
+                    />
+                    <YAxis 
+                        yAxisId="left"
+                        stroke="hsl(var(--muted-foreground))" 
+                        fontSize={12} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        width={40}
+                        tickFormatter={(val) => {
+                            if (val === 0) return '0';
+                            if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(0)}조`;
+                            return `${val}억`;
+                        }}
+                    />
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        width={50}
+                        domain={['dataMin - 1000', 'dataMax + 1000']}
+                        tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                    />
+                    <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--accent)/0.1)' }} />
+                    
+                    {activeAssets.map((asset, index) => (
+                         <Bar 
+                            key={asset} 
+                            yAxisId="left"
+                            dataKey={asset} 
+                            stackId="a"
+                            fill={assetColors[asset as keyof typeof assetColors]} 
+                            radius={activeAssets.length === 1 || index === activeAssets.length -1 ? [2,2,0,0] : [0,0,0,0]}
+                            barSize={18}
+                        />
+                    ))}
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="BTC_Price"
+                        stroke={assetColors['BTC_Price']}
+                        strokeWidth={2}
+                        dot={false}
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
     )
 }
 
@@ -412,53 +321,127 @@ const ListView = ({activeAsset}: {activeAsset: string}) => {
 }
 
 export function EtfFlowTracker() {
-  const [isTableOpen, setIsTableOpen] = useState<boolean>(false);
-  const [selectedAsset, setSelectedAsset] = useState<string>('BTC');
+  const [timeframe, setTimeframe] = useState<Timeframe>('1M');
+  const [activeAsset, setActiveAsset] = useState<string>('BTC');
+  const [chartData, setChartData] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    setChartData(null); // Set to null to show skeleton
+    const timer = setTimeout(() => {
+        setChartData(generateChartData(timeframe));
+    }, 300); // Simulate network delay
+    return () => clearTimeout(timer);
+  }, [timeframe]);
+
+
+  const renderTopLegend = () => {
+      if (!chartData) {
+        return (
+          <div className="flex items-center gap-4 text-sm min-w-max px-1">
+             {chartAssets.map(asset => (
+                <div key={asset} className="flex items-center gap-1.5">
+                   <Skeleton className="w-2.5 h-2.5 rounded-full" />
+                   <Skeleton className="h-4 w-16" />
+                </div>
+             ))}
+          </div>
+        )
+      }
+
+      const isFlowView = timeframe === '1W' || timeframe === '1M';
+      const totalFlows = chartAssets.reduce((acc, asset) => {
+          if (isFlowView) {
+             acc[asset] = chartData.reduce((sum, item) => sum + (item[asset as keyof typeof item] as number), 0);
+          } else {
+             const lastItem = chartData[chartData.length - 1];
+             acc[asset] = lastItem ? (lastItem[asset as keyof typeof lastItem] as number) : 0;
+          }
+          return acc;
+      }, {} as {[key: string]: number});
+
+      return (
+        <div className="flex items-center gap-4 text-sm min-w-max px-1">
+          {chartAssets.map(asset => {
+            const total = totalFlows[asset];
+            const isActive = activeAsset === asset;
+            const color = assetColors[asset as keyof typeof assetColors];
+            
+            return (
+              <button
+                key={asset}
+                onClick={() => setActiveAsset(asset)}
+                className={`flex items-center gap-1.5 cursor-pointer transition-all ${!isActive ? 'opacity-50 hover:opacity-100' : ''}`}
+              >
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className={`font-bold ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{asset}</span>
+                <span className={`font-mono ${
+                    total > 0 ? 'text-red-500' : 'text-blue-500'
+                  }`
+                }>
+                    {total > 0 ? '+' : ''}{formatKoreanNumber(total)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )
+  }
 
   return (
-    <div className="w-full max-w-full space-y-6">
-        {/* 4개의 차트를 세로로 배치 */}
-        <div className="space-y-6">
-            {chartAssets.map((asset) => (
-                <SingleAssetChartView 
-                    key={asset}
-                    asset={asset}
-                />
-            ))}
-        </div>
-
-        {/* 테이블 섹션 */}
-        <Collapsible open={isTableOpen} onOpenChange={setIsTableOpen}>
-            <CollapsibleTrigger asChild>
-                <Button 
-                    variant="outline" 
-                    className="w-full flex items-center justify-between"
-                >
-                    <span className="text-sm font-medium">ETF 상세 정보 보기</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${isTableOpen ? 'rotate-180' : ''}`} />
-                </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-                <div className="min-h-[200px] pt-4">
-                    <div className="flex items-center gap-4 mb-4">
-                        {chartAssets.map((asset) => (
-                            <button
-                                key={asset}
-                                onClick={() => setSelectedAsset(asset)}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                                    selectedAsset === asset
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                }`}
+    <Card className="border-none shadow-none bg-transparent w-full max-w-full overflow-hidden">
+        <CardHeader className="px-0 pt-0 pb-4">
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col space-y-1.5">
+                    <h1 className="text-lg font-semibold text-foreground">기관들은 지금, 사고 있을까 팔고 있을까?</h1>
+                    <p className="text-muted-foreground">
+                        주요 현물 ETF의 자금 흐름을 통해 기관 투자자들의 움직임을 파악하고, 시장의 다음 방향을 예측해보세요.
+                    </p>
+                </div>
+                 <div className="flex justify-end items-center">
+                     <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
+                        {(['1W', '1M', '1Y', 'All'] as Timeframe[]).map((tf) => (
+                            <Button
+                            key={tf}
+                            size="sm"
+                            variant={timeframe === tf ? 'secondary' : 'ghost'}
+                            onClick={() => setTimeframe(tf)}
+                            className="h-7 px-3 text-xs rounded-sm"
                             >
-                                {asset}
-                            </button>
+                            {tf}
+                            </Button>
                         ))}
                     </div>
-                    <ListView activeAsset={selectedAsset.toLowerCase()} />
                 </div>
-            </CollapsibleContent>
-        </Collapsible>
-    </div>
+                
+                <div className="w-full overflow-x-auto scrollbar-hide pb-1">
+                    {renderTopLegend()}
+                </div>
+            </div>
+        </CardHeader>
+        
+        <CardContent className="p-0">
+            <div className="h-72 w-full mb-6">
+                {chartData ? (
+                    <ChartView 
+                        timeframe={timeframe} 
+                        activeAssets={[activeAsset]} 
+                        chartData={chartData}
+                    />
+                ) : (
+                    <Skeleton className="h-full w-full" />
+                )}
+            </div>
+
+            <div className="h-px w-full bg-border/50 mb-4"></div>
+            
+            <div className="min-h-[200px]">
+                <ListView activeAsset={activeAsset.toLowerCase()} />
+            </div>
+
+            <div className="h-px w-full bg-border/50 my-8"></div>
+            
+            <CorporateTreasuryTracker />
+        </CardContent>
+    </Card>
   );
 }

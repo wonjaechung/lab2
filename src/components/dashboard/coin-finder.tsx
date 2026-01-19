@@ -42,7 +42,7 @@ export function CoinFinder() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="w-full h-full bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100 rounded-xl p-6 flex items-center justify-between transition-all active:scale-[0.99] group">
+        <button className="w-full h-full bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between transition-all active:scale-[0.99] group">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
               <Search className="w-6 h-6" />

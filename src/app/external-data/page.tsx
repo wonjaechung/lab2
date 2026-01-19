@@ -11,7 +11,7 @@ import { MarketOverview } from '@/components/external-data/market-overview';
 import { EtfNews } from '@/components/external-data/etf-news';
 
 const navigationItems = [
-  { name: '현물 ETF 흐름', value: 'etf-treasury' },
+  { name: 'ETF / DAT', value: 'etf-treasury' },
   { name: '온체인 고래', value: 'whales' },
   { name: '뉴스', value: 'news', disabled: false },
 ];
