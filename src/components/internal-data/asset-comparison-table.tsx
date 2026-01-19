@@ -1135,7 +1135,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                   <nav className="space-y-4">
                     {filterGroups.map((group) => (
                       <div key={group.id} className="space-y-1">
-                        <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1">
+                        <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1 border-b border-border/50">
                           {group.name}
                         </div>
                         {group.items.map((item) => (
