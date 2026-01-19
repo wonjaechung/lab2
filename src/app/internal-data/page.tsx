@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ function InternalDataSidebar({
   );
 }
 
-export default function InternalDataPage() {
+function InternalDataContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('status');
 
@@ -124,5 +124,17 @@ export default function InternalDataPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function InternalDataPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background font-body flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    }>
+      <InternalDataContent />
+    </Suspense>
   );
 }
