@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Label } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Label, CartesianGrid } from 'recharts';
 import { User, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -66,30 +66,47 @@ export function MembershipAssetDistribution() {
     const { myPositionIndex, myRankPercent } = useMemo(() => {
         let cumulativePercent = 0;
         let positionIndex = -1;
-        
+        const pnl = myPortfolio.pnlPercent;
+
+        // 정방향으로 순회하면서 위치 찾기
+        for(let i=0; i<distributionData.length; i++) {
+            const range = distributionData[i].range;
+            let isInRange = false;
+
+            if (range.startsWith('>')) {
+                const threshold = parseFloat(range.replace('>', '').replace('%', '').trim());
+                isInRange = pnl > threshold;
+            } else if (range.startsWith('<')) {
+                const threshold = parseFloat(range.replace('<', '').replace('%', '').trim());
+                isInRange = pnl < threshold;
+            } else if (range.includes('~')) {
+                const parts = range.split('~');
+                const min = parseFloat(parts[0].replace(/[^0-9.-]/g, ''));
+                const max = parseFloat(parts[1].replace(/[^0-9.-]/g, ''));
+                isInRange = pnl >= min && pnl < max;
+            }
+
+            if (isInRange) {
+                positionIndex = i;
+                break;
+            }
+        }
+
+        // 상위 순위 계산 (위에서부터 누적)
         const reversedData = [...distributionData].reverse();
-
         for(let i=0; i<reversedData.length; i++) {
-            const range = reversedData[i].range;
-            const pnl = myPortfolio.pnlPercent;
-
-            if ( (range.startsWith('>') && pnl > parseFloat(range.replace('>', '').replace('%', ''))) ||
-                 (range.startsWith('<') && pnl < parseFloat(range.replace('<', '').replace('%', ''))) ||
-                 (range.includes('~') && pnl >= parseFloat(range.split('~')[0].replace('%','')) && pnl < parseFloat(range.split('~')[1].replace('%','')) )
-            ) {
-                positionIndex = distributionData.length - 1 - i;
-            }
-
-            if (positionIndex === -1) {
+            const idx = distributionData.length - 1 - i;
+            if (idx > positionIndex) {
                 cumulativePercent += reversedData[i].holders;
+            } else if (idx === positionIndex) {
+                cumulativePercent += reversedData[i].holders / 2;
+                break;
             }
         }
-        
-        if (positionIndex !== -1) {
-          cumulativePercent += reversedData.find((d, i) => distributionData.length - 1 - i === positionIndex)!.holders / 2;
-        }
 
-        return { myPositionIndex: positionIndex, myRankPercent: Math.round(cumulativePercent) };
+        const rankPercent = Math.round(cumulativePercent);
+
+        return { myPositionIndex: positionIndex, myRankPercent: rankPercent };
     }, [myPortfolio.pnlPercent]);
 
     const AssetList = ({ title, assets, type }: { title: string, assets: any[], type: 'gainer' | 'loser' }) => (
@@ -123,46 +140,38 @@ export function MembershipAssetDistribution() {
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle className="text-lg">같은 등급의 다른 멤버들은, 웃고 있을까 울고 있을까?</CardTitle>
-                <p className="text-muted-foreground">같은 멤버십 등급 내 유저들의 수익률 분포와 나의 현재 위치를 비교하며 포트폴리오를 점검해보세요.</p>
+                <CardTitle className="text-lg font-semibold text-foreground">등급 내 수익률 분포</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">같은 등급 내 유저들의 수익률 분포를 확인하세요</p>
             </CardHeader>
             <CardContent>
-                <div className="grid md:grid-cols-2 gap-8 items-center">
-                    <div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <AssetList title="화이트 등급 수익률 TOP3" assets={marketData.topGainers} type="gainer" />
-                           <AssetList title="화이트 등급 수익률 BOTTOM3" assets={marketData.topLosers} type="loser" />
-                        </div>
-                    </div>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={distributionData} layout="vertical" margin={{ left: 20 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="range" type="category" width={90} tick={{ fontSize: 12 }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--accent))' }} />
-                                <Bar dataKey="holders" radius={[0, 4, 4, 0]}>
-                                    {distributionData.map((entry, index) => {
-                                        const pnl = parseFloat(entry.range.split('~')[0].replace(/[^0-9.-]/g, ''));
-                                        const color = pnl >= 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))';
-                                        
-                                        return <Cell key={`cell-${index}`} fill={color} />;
-                                    })}
-                                </Bar>
-                                {myPositionIndex !== -1 && (
-                                     <ReferenceLine 
-                                        y={myPositionIndex} 
-                                        stroke="hsl(var(--primary))" 
-                                        strokeDasharray="4 4" 
-                                        strokeWidth={2}
-                                     >
-                                         <Label>
-                                            <User className="w-4 h-4 text-primary" />
-                                         </Label>
-                                     </ReferenceLine>
-                                )}
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                {/* 차트 */}
+                <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={distributionData} layout="vertical" margin={{ left: 10, top: 10, bottom: 10, right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
+                            <XAxis type="number" hide />
+                            <YAxis 
+                                dataKey="range" 
+                                type="category" 
+                                width={95} 
+                                tick={{ fontSize: 10 }} 
+                                tickLine={false}
+                                axisLine={false}
+                            />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--accent)/0.1)' }} />
+                            <Bar dataKey="holders" radius={[0, 4, 4, 0]} barSize={22}>
+                                {distributionData.map((entry, index) => {
+                                    const pnl = parseFloat(entry.range.split('~')[0].replace(/[^0-9.-]/g, ''));
+                                    // 더 부드러운 그라데이션 색상
+                                    const color = pnl >= 0 
+                                        ? index < 5 ? '#86efac' : index < 7 ? '#4ade80' : '#22c55e'
+                                        : index > 5 ? '#fca5a5' : index > 3 ? '#fb7185' : '#ef4444';
+                                    
+                                    return <Cell key={`cell-${index}`} fill={color} />;
+                                })}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </CardContent>
         </Card>

@@ -403,7 +403,7 @@ export function MarketOverview() {
                             </div>
                             <CollapsibleContent>
                                <div className="pl-8 mt-2 space-y-1 max-h-[320px] overflow-y-auto pr-2">
-                                    {assetsInTheme.length > 0 ? assetsInTheme.map(subItem => {
+                                    {assetsInTheme.length > 0 ? assetsInTheme.map((subItem, index) => {
                                         const subItemIsSelected = selectedAssets.includes(subItem.id);
                                         const subItemChange = subItem.change[activePeriod as keyof typeof subItem.change];
                                         const subItemIsPositive = subItemChange >= 0;
@@ -421,6 +421,7 @@ export function MarketOverview() {
                                                         {subItemIsSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                                                     </div>
                                                 )}
+                                                <span className="text-sm font-semibold text-muted-foreground mr-2 w-6">{index + 1}.</span>
                                                 <Avatar className="h-6 w-6 mr-3">
                                                 <AvatarImage src={subItem.img} alt={subItem.name} />
                                                 <AvatarFallback>{subItem.name.charAt(0)}</AvatarFallback>

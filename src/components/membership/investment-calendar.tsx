@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CalendarMonthlySummary } from './calendar-monthly-summary';
 
 interface DailyData {
   date: string;
@@ -129,6 +130,58 @@ export function InvestmentCalendar({ journalEntries, setJournalEntries }: Invest
     setTotalPnl(pnl);
   }, [currentMonth]);
 
+  // 월별 요약 데이터 계산
+  const monthlySummary = useMemo(() => {
+    const tradingDays = monthlyData.filter(d => d.pnl !== undefined).length;
+    const bestDay = monthlyData
+      .filter(d => d.pnl !== undefined && d.pnl > 0)
+      .sort((a, b) => (b.pnl || 0) - (a.pnl || 0))[0];
+    const worstDay = monthlyData
+      .filter(d => d.pnl !== undefined && d.pnl < 0)
+      .sort((a, b) => (a.pnl || 0) - (b.pnl || 0))[0];
+    
+    return {
+      tradingDays,
+      bestDay: bestDay ? { date: bestDay.date, pnl: bestDay.pnl || 0 } : undefined,
+      worstDay: worstDay ? { date: worstDay.date, pnl: worstDay.pnl || 0 } : undefined,
+    };
+  }, [monthlyData]);
+
+
+  // 주간 수익률 추이 데이터
+  const weeklyPerformance = useMemo(() => {
+    const weeks: { week: string; pnl: number; cumulative: number }[] = [];
+    let cumulative = 0;
+    
+    // 월의 주별로 데이터 그룹화
+    const weekData: DailyData[][] = [];
+    let currentWeek: DailyData[] = [];
+    
+    monthlyData.forEach((day, index) => {
+      const date = new Date(day.date);
+      if (date.getDay() === 0 && currentWeek.length > 0) {
+        weekData.push(currentWeek);
+        currentWeek = [];
+      }
+      currentWeek.push(day);
+      if (index === monthlyData.length - 1) {
+        weekData.push(currentWeek);
+      }
+    });
+
+    weekData.forEach((week, index) => {
+      const weekPnl = week.reduce((sum, day) => sum + (day.pnl || 0), 0);
+      cumulative += weekPnl;
+      weeks.push({
+        week: `${index + 1}주차`,
+        pnl: weekPnl,
+        cumulative,
+      });
+    });
+
+    return weeks;
+  }, [monthlyData]);
+
 
   const dataMap = useMemo(() => {
     return monthlyData.reduce((acc, day) => {
@@ -219,24 +272,13 @@ export function InvestmentCalendar({ journalEntries, setJournalEntries }: Invest
 
   return (
     <Dialog open={isJournalOpen} onOpenChange={setJournalOpen}>
-      <div>
-        <div className="flex items-start justify-between p-6">
+      <div className="space-y-6">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between p-6 pb-0">
             <div>
-              <h2 className="text-lg font-bold">멤버십 캘린더</h2>
-              <p className="text-muted-foreground mt-2">
-                날짜를 클릭해서 매매일지를 20일 이상 작성하고, 등급 승급 부스터를 받으세요!
-              </p>
+
             </div>
-            <div className="flex items-center gap-6 shrink-0">
-              {monthlyData.length > 0 && (
-               <div className="text-right">
-                <p className="text-sm text-muted-foreground">이번 달 누적 수익</p>
-                <p className={cn("text-lg font-bold", totalPnl > 0 ? "text-green-500" : "text-red-500")}>
-                    {totalPnl > 0 ? '+' : ''}{formatKoreanCurrency(totalPnl)}
-                </p>
-               </div>
-              )}
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
                   <Button
                     variant="outline"
                     size="icon"
@@ -257,8 +299,21 @@ export function InvestmentCalendar({ journalEntries, setJournalEntries }: Invest
                     <ChevronRight className="h-4 w-4" />
                   </Button>
               </div>
-            </div>
         </div>
+
+        {/* 월별 요약 카드 */}
+        <div className="px-6">
+          <CalendarMonthlySummary
+            totalPnl={totalPnl}
+            tradingDays={monthlySummary.tradingDays}
+            bestDay={monthlySummary.bestDay}
+            worstDay={monthlySummary.worstDay}
+            journalEntriesCount={journalEntries.length}
+            targetDays={20}
+          />
+        </div>
+
+        {/* 캘린더 */}
         <div className="p-6 pt-0">
           <div className="grid grid-cols-7 gap-px bg-border border-t border-l rounded-t-lg overflow-hidden">
             {weekDays.map((day) => (

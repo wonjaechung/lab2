@@ -52,17 +52,45 @@ const formatPrice = (price: number) => {
     }
 };
 
+// 모의 데이터: 내가 보유한 코인 목록
+const myHoldings = ['ETH', 'BTC', 'SOL', 'XRP', 'LINK'];
+
 function DexFuturesPositions() {
     const [showAll, setShowAll] = useState(false);
+    const [showMyHoldingsOnly, setShowMyHoldingsOnly] = useState(false);
     const initialCount = 10;
-    const displayedData = showAll ? allPositionsData : allPositionsData.slice(0, initialCount);
+    
+    // 필터링된 데이터
+    const filteredData = showMyHoldingsOnly 
+        ? allPositionsData.filter(item => myHoldings.includes(item.ticker))
+        : allPositionsData;
+    
+    const displayedData = showAll ? filteredData : filteredData.slice(0, initialCount);
     
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-end mb-4">
                 <div className="flex items-center gap-2">
+                    {showMyHoldingsOnly && (
+                        <span className="text-sm text-muted-foreground">
+                            {filteredData.length}개
+                        </span>
+                    )}
+                    <Button
+                        variant={showMyHoldingsOnly ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowMyHoldingsOnly(!showMyHoldingsOnly)}
+                        className="h-8"
+                    >
+                        {showMyHoldingsOnly ? '전체 보기' : '내 보유 코인만 보기'}
+                    </Button>
                 </div>
             </div>
+            {showMyHoldingsOnly && filteredData.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                    보유한 코인이 없습니다.
+                </div>
+            )}
             <div className="space-y-4">
                 {displayedData.map(item => (
                     <div key={item.ticker} className="grid grid-cols-12 items-center gap-4 text-sm">
@@ -92,7 +120,7 @@ function DexFuturesPositions() {
                     </div>
                 ))}
             </div>
-            {!showAll && allPositionsData.length > initialCount && (
+            {!showAll && filteredData.length > initialCount && (
                 <div className="flex justify-center mt-6">
                     <Button 
                         variant="outline" 

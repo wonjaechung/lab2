@@ -50,7 +50,7 @@ export function NextTierGauge() {
       </CardContent>
       <CardFooter>
         <Button size="lg" className="w-full bg-primary hover:bg-primary/90">
-          승급전 도전!
+          거래하기
         </Button>
       </CardFooter>
     </Card>

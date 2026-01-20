@@ -9,12 +9,16 @@ import { InvestmentCalendar } from '@/components/membership/investment-calendar'
 import type { JournalEntry } from '@/components/membership/trading-journal';
 import { MembershipAssetDistribution } from '@/components/membership/membership-asset-distribution';
 import { MembershipAssetDistribution2 } from '@/components/membership/membership-asset-distribution2';
+import { MembershipAssetDistributionTimeline } from '@/components/membership/membership-asset-distribution-timeline';
+import { WeeklyPerformanceAnalysis } from '@/components/membership/weekly-performance-analysis';
+import { GradeTopPortfolios } from '@/components/membership/grade-top-portfolios';
+import { GradePopularCoins } from '@/components/membership/grade-popular-coins';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const navigationItems = [
   { name: '멤버십 현황', value: 'overview' },
-  { name: '투자 캘린더', value: 'calendar' },
+  { name: '멤버십 캘린더', value: 'calendar' },
 ];
 
 function MembershipSidebar({
@@ -91,15 +95,22 @@ export default function MembershipPage() {
                             <NextTierGauge />
                             <TierBenefitCalculator />
                         </div>
-                        <MembershipAssetDistribution />
-                        <MembershipAssetDistribution2 />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <MembershipAssetDistributionTimeline />
+                            <MembershipAssetDistribution />
+                        </div>
+                        <GradePopularCoins />
+                        {/* <MembershipAssetDistribution2 /> */}
                     </div>
                 </TabsContent>
                 <TabsContent value="calendar">
-                    <InvestmentCalendar 
-                        journalEntries={journalEntries}
-                        setJournalEntries={setJournalEntries}
-                    />
+                    <div className="space-y-8">
+                        <WeeklyPerformanceAnalysis />
+                        <InvestmentCalendar 
+                            journalEntries={journalEntries}
+                            setJournalEntries={setJournalEntries}
+                        />
+                    </div>
                 </TabsContent>
                </Tabs>
             </div>
