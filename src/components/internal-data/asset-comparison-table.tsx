@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ChevronDown, User, Activity, X, Plus, RotateCcw, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { ChevronDown, User, Activity, X, Plus, RotateCcw, TrendingUp, TrendingDown, Info, Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { AssetDeepDive } from './asset-deep-dive';
@@ -414,6 +414,11 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
 
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' }>({ key: 'rank', direction: 'ascending' });
+  
+  // 검색 기능 state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchedAsset, setSearchedAsset] = useState<Asset | null>(null);
 
   // URL 파라미터로부터 필터 자동 적용
   useEffect(() => {
@@ -741,6 +746,11 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
   // Filter assets
   const filteredAssets = useMemo(() => {
     let assets = [...convertedAssets];
+    
+    // 검색된 티커가 있으면 해당 티커만 필터링
+    if (searchedAsset) {
+      return assets.filter(asset => asset.ticker === searchedAsset.ticker);
+    }
 
     if (activeFilters.length === 0) {
       return assets;
@@ -859,7 +869,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
         return true;
       });
     });
-  }, [activeFilters, convertedAssets]);
+  }, [activeFilters, convertedAssets, searchedAsset]);
 
   const sortedAssets = useMemo(() => {
     let sortableItems = [...filteredAssets];
@@ -910,7 +920,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
       return 0;
     });
     return sortableItems;
-  }, [sortConfig, filteredAssets]);
+  }, [sortConfig, filteredAssets, searchedAsset]);
 
   const requestSort = (key: SortKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -1106,8 +1116,91 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
         )}
         
         {/* Filter Add Bar */}
-        <div className="flex flex-wrap items-center gap-2 pb-4 border-b mb-4">
-          <Dialog open={filterDialogOpen} onOpenChange={(open) => {
+        <div className="pb-4 border-b mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {/* 검색 - 필터 추가 왼쪽 */}
+            <div className="flex items-center gap-2">
+              {searchedAsset && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchedAsset(null);
+                    setSelectedAsset(null);
+                    setSearchQuery('');
+                  }}
+                  className="h-8 px-2"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              )}
+              <Popover open={searchOpen} onOpenChange={(open) => {
+                setSearchOpen(open);
+                if (!open) {
+                  setSearchQuery('');
+                }
+              }}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={searchedAsset ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 px-3 text-sm"
+                  >
+                    <Search className="w-3 h-3 mr-1" />
+                    검색
+                    {searchedAsset && (
+                      <span className="ml-1">({searchedAsset.ticker})</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-2">
+                    <Input
+                      placeholder="티커 검색 (예: BTC, ETH)"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
+                      className="mb-2"
+                    />
+                    <ScrollArea className="h-[300px]">
+                      <div className="space-y-1">
+                        {convertedAssets
+                          .filter(asset => 
+                            asset.ticker.includes(searchQuery) || 
+                            asset.name.includes(searchQuery) ||
+                            searchQuery === ''
+                          )
+                          .map((asset) => (
+                            <button
+                              key={asset.ticker}
+                              onClick={() => {
+                                setSearchedAsset(asset);
+                                setSelectedAsset(asset);
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left"
+                            >
+                              {asset.img && (
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={asset.img} alt={asset.name} />
+                                  <AvatarFallback>{asset.ticker}</AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div className="flex-1">
+                                <div className="text-sm font-medium">{asset.name}</div>
+                                <div className="text-xs text-muted-foreground">{asset.ticker}</div>
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+            <Dialog open={filterDialogOpen} onOpenChange={(open) => {
             setFilterDialogOpen(open);
             if (open) {
               // Dialog가 열릴 때 선택 상태 초기화
@@ -1133,11 +1226,31 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                 {/* Left Sidebar - Filter Menu */}
                 <div className="w-48 border-r bg-muted/30 p-4 overflow-y-auto">
                   <nav className="space-y-4">
-                    {filterGroups.map((group) => (
-                      <div key={group.id} className="space-y-1">
-                        <div className="px-3 py-2 text-xs font-semibold text-foreground bg-muted rounded-md mb-1 border-b border-border/50">
-                          {group.name}
-                        </div>
+                    {filterGroups.map((group) => {
+                      // 각 카테고리별 색상 정의
+                      const getGroupColor = (groupId: string) => {
+                        switch (groupId) {
+                          case 'main':
+                            return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+                          case 'exchange':
+                            return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
+                          case 'price':
+                            return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
+                          case 'technical':
+                            return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+                          default:
+                            return 'bg-muted text-foreground border-border/50';
+                        }
+                      };
+                      
+                      return (
+                        <div key={group.id} className="space-y-1">
+                          <div className={cn(
+                            "px-3 py-2 text-xs font-semibold rounded-md mb-1 border-b",
+                            getGroupColor(group.id)
+                          )}>
+                            {group.name}
+                          </div>
                         {group.items.map((item) => (
                           <button
                             key={item.id}
@@ -1153,7 +1266,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                             className={cn(
                               'w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors',
                               selectedFilterMenu === item.id
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-muted text-foreground'
                                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                             )}
                           >
@@ -1161,7 +1274,8 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                           </button>
                         ))}
                       </div>
-                    ))}
+                    );
+                    })}
                   </nav>
                 </div>
 
@@ -2502,9 +2616,14 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
               </div>
             </DialogContent>
           </Dialog>
-
-          {activeFilters.map((filter) => {
-            const isChangeFilter = filter.type === 'change';
+            </div>
+          </div>
+          
+          {/* 필터 목록 - 필터 추가 버튼 아래 */}
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {activeFilters.map((filter) => {
+                const isChangeFilter = filter.type === 'change';
             const isMaFilter = filter.type === 'ma';
             const isRsiFilter = filter.type === 'rsi';
             const isVolumeFilter = filter.type === 'volume';
@@ -2981,6 +3100,8 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
               </Popover>
             );
           })}
+            </div>
+          )}
         </div>
 
         <div className="w-full">
@@ -3130,10 +3251,10 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
           </div>
         </div>
       </div>
-      {!hideDeepDive && selectedAsset && sortedAssets.length > 0 && (
+      {!hideDeepDive && (searchedAsset || selectedAsset) && (
         <>
           <div className="h-px w-full bg-border/50"></div>
-          <AssetDeepDive asset={selectedAsset} />
+          <AssetDeepDive asset={searchedAsset || selectedAsset!} />
         </>
       )}
     </div>

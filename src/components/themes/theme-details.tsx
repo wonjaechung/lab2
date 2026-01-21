@@ -17,11 +17,20 @@ type SortDirection = 'asc' | 'desc';
 
 const getThemeCategoryParam = (themeId: string): string => {
   const categoryMap: Record<string, string> = {
-    'AI': 'ai',
+    'L1': 'l1',
     'L2': 'l2',
+    'AI': 'ai',
+    'DePIN': 'depin',
+    'RWA': 'rwa',
     'GAME': 'game',
     'DeFi': 'defi',
-    'RWA': 'rwa',
+    'SERVICE': 'service',
+    'MEME': 'meme',
+    'SOCIAL': 'social',
+    'NFT': 'nft',
+    'PAYMENT': 'payment',
+    'METAVERSE': 'metaverse',
+    'FAN': 'fan',
   };
   return categoryMap[themeId] || '';
 };
@@ -95,7 +104,7 @@ export function ThemeDetails() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {themeData.map((theme) => {
+        {themeData.map((theme, index) => {
           if (!theme.id) return null;
 
           const themeChange = theme.change?.[activePeriod as keyof typeof theme.change] ?? 0;
@@ -105,9 +114,20 @@ export function ThemeDetails() {
             <Card key={theme.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl font-bold">{theme.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{theme.value}</p>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex items-center justify-center w-10 h-10 rounded-full shrink-0",
+                      index === 0 ? "bg-yellow-100 text-yellow-700" :
+                      index === 1 ? "bg-gray-100 text-gray-700" :
+                      index === 2 ? "bg-orange-100 text-orange-700" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      <span className="text-sm font-semibold">{index + 1}위</span>
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-bold">{theme.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">{theme.value}</p>
+                    </div>
                   </div>
                   <div
                     className={cn(
@@ -121,7 +141,7 @@ export function ThemeDetails() {
                 </div>
               </CardHeader>
               <CardContent className="flex-1 space-y-3">
-                {theme.assets.slice(0, 3).map((asset) => {
+                {theme.assets.filter(asset => asset.img).slice(0, 3).map((asset) => {
                   const assetChange = asset.change?.[activePeriod as keyof typeof asset.change] ?? 0;
                   const assetIsPositive = assetChange >= 0;
 

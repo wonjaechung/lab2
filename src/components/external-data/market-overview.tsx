@@ -1,9 +1,9 @@
 'use client';
 
-import { TrendingDown, TrendingUp, Check, Plus, X as XIcon, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { TrendingDown, TrendingUp, Check, Plus, X as XIcon, ChevronDown, ArrowLeft, ArrowRight, Calculator } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -18,29 +18,30 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { allAssets as themeAllAssets } from '@/components/themes/data';
 
 
 const allAssets = [
-  { id: 'BTC', name: '비트코인', value: '98,000,000', change: {'1D': -0.5, '1W': 1.5, '1M': -3.0, '1Y': 45.0}, isCrypto: true, symbol: '₩', color: '#F7931A', img: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg' },
-  { id: 'ETH', name: '이더리움', value: '4,500,000', change: {'1D': 0.1, '1W': 2.5, '1M': -1.0, '1Y': 35.0}, isCrypto: true, symbol: '₩', color: '#627EEA', img: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
-  { id: 'SP500', name: 'S&P 500', value: '5,477.90', change: {'1D': -0.16, '1W': 0.5, '1M': 1.2, '1Y': 15.0}, isCrypto: false, symbol: '', color: '#4B8B3B' },
-  { id: 'NASDAQ', name: '나스닥', value: '19,700.43', change: {'1D': -0.26, '1W': 0.8, '1M': 2.5, '1Y': 22.0}, isCrypto: false, symbol: '', color: '#2A7FFF' },
-  { id: 'KOSPI', name: '코스피', value: '2,774.40', change: {'1D': -0.70, '1W': -1.2, '1M': 0.8, '1Y': 8.0}, isCrypto: false, symbol: '', color: '#0033A0' },
-  { id: 'KOSDAQ', name: '코스닥', value: '841.52', change: {'1D': -1.42, '1W': -2.1, '1M': -0.5, '1Y': 5.0}, isCrypto: false, symbol: '', color: '#FF7F00' },
-  { id: 'GOLD', name: '금', value: '2,320.50', change: {'1D': 0.35, '1W': -0.5, '1M': -2.0, '1Y': 12.0}, isCrypto: false, symbol: '$', color: '#FFD700' },
-  { id: 'HYPER_trend', name: '하이퍼레인', value: '1,234', change: {'1D': 15.2, '1W': 25.5, '1M': 45.0, '1Y': 320.0}, isCrypto: true, symbol: '₩', color: '#8A2BE2' },
-  { id: 'MEV_trend', name: '미버스', value: '567', change: {'1D': 12.8, '1W': 18.2, '1M': 33.0, '1Y': 280.0}, isCrypto: true, symbol: '₩', color: '#FF69B4' },
-  { id: 'API3_trend', name: '에이피아이쓰리', value: '3,456', change: {'1D': 8.5, '1W': 11.0, '1M': 21.0, '1Y': 150.0}, isCrypto: true, symbol: '₩', color: '#00CED1' },
-  { id: 'DEEP_trend', name: '딥북', value: '89', change: {'1D': 5.1, '1W': 8.9, '1M': 18.0, '1Y': 180.0}, isCrypto: true, symbol: '₩', color: '#FFD700' },
-  { id: 'WOO_trend', name: '우', value: '450', change: {'1D': 3.9, '1W': 6.1, '1M': 12.0, '1Y': 450.0}, isCrypto: true, symbol: '₩', color: '#32CD32' },
-  { id: 'ERA_trend', name: '칼데라', value: '789', change: {'1D': -2.1, '1W': -5.2, '1M': -10.0, '1Y': 50.0}, isCrypto: true, symbol: '₩', color: '#FF4500' },
-  { id: 'CUDIS_trend', name: '쿠디스', value: '1,010', change: {'1D': 1.0, '1W': 2.0, '1M': 5.0, '1Y': 100.0}, isCrypto: true, symbol: '₩', color: '#1E90FF' },
+  { id: 'BTC', name: '비트코인', value: '98,000,000', change: {'1D': -0.5, '1W': 1.5, '1M': -3.0, '1Y': 45.0}, isCrypto: true, symbol: '₩', color: '#F7931A', img: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg', averagePrice: 95000000, quantity: 0.5 },
+  { id: 'ETH', name: '이더리움', value: '4,500,000', change: {'1D': 0.1, '1W': 2.5, '1M': -1.0, '1Y': 35.0}, isCrypto: true, symbol: '₩', color: '#627EEA', img: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', averagePrice: 4200000, quantity: 2.5 },
+  { id: 'SP500', name: 'S&P 500', value: '5,477.90', change: {'1D': -0.16, '1W': 0.5, '1M': 1.2, '1Y': 15.0}, isCrypto: false, symbol: '$', color: '#4B8B3B', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/S%26P_500_Index_logo.svg/200px-S%26P_500_Index_logo.svg.png' },
+  { id: 'NASDAQ', name: '나스닥', value: '19,700.43', change: {'1D': -0.26, '1W': 0.8, '1M': 2.5, '1Y': 22.0}, isCrypto: false, symbol: '$', color: '#2A7FFF', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/NASDAQ_logo.svg/200px-NASDAQ_logo.svg.png' },
+  { id: 'KOSPI', name: '코스피', value: '2,774.40', change: {'1D': -0.70, '1W': -1.2, '1M': 0.8, '1Y': 8.0}, isCrypto: false, symbol: '₩', color: '#0033A0', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/KRX_logo.svg/200px-KRX_logo.svg.png' },
+  { id: 'KOSDAQ', name: '코스닥', value: '841.52', change: {'1D': -1.42, '1W': -2.1, '1M': -0.5, '1Y': 5.0}, isCrypto: false, symbol: '₩', color: '#FF7F00', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/KRX_logo.svg/200px-KRX_logo.svg.png' },
+  { id: 'GOLD', name: '금', value: '2,320.50', change: {'1D': 0.35, '1W': -0.5, '1M': -2.0, '1Y': 12.0}, isCrypto: false, symbol: '$', color: '#FFD700', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Gold_ingots.jpg/200px-Gold_ingots.jpg' },
+  { id: 'USDE_trend', name: '유에스디이', value: '1,200', change: {'1D': 0.00, '1W': 0.5, '1M': 1.2, '1Y': 5.0}, isCrypto: true, symbol: '₩', color: '#4B8B3B', daysAgo: 7 },
+  { id: 'BREVIS_trend', name: '브레비스', value: '850', change: {'1D': -7.51, '1W': -5.2, '1M': -2.0, '1Y': 10.0}, isCrypto: true, symbol: '₩', color: '#2A7FFF', daysAgo: 14 },
+  { id: 'XAUT_trend', name: '테더 골드', value: '3,200,000', change: {'1D': 2.90, '1W': 1.5, '1M': 3.0, '1Y': 8.0}, isCrypto: true, symbol: '₩', color: '#FFD700', daysAgo: 20 },
+  { id: 'GK_PASS_trend', name: '지케이패스', value: '450', change: {'1D': -3.45, '1W': -2.1, '1M': -1.0, '1Y': 5.0}, isCrypto: true, symbol: '₩', color: '#FF7F00', daysAgo: 26 },
+  { id: 'THEORIC_trend', name: '테오릭', value: '1,800', change: {'1D': -7.90, '1W': -5.5, '1M': -3.0, '1Y': 2.0}, isCrypto: true, symbol: '₩', color: '#8A2BE2', daysAgo: 29 },
   { id: 'AI', name: '인공지능(AI)', value: '3,888조 6856억', change: {'1D': 15.2, '1W': 25.5, '1M': 45.0, '1Y': 320.0}, isCrypto: true, symbol: '', color: '#FF6B6B', rising: 46, falling: 75 },
   { id: 'L2', name: '레이어2', value: '1,200조 1122억', change: {'1D': 12.8, '1W': 18.2, '1M': 33.0, '1Y': 280.0}, isCrypto: true, symbol: '', color: '#4ECDC4', rising: 32, falling: 21 },
   { id: 'GAME', name: '게임', value: '850조 4500억', change: {'1D': 8.5, '1W': 11.0, '1M': 21.0, '1Y': 150.0}, isCrypto: true, symbol: '', color: '#45B7D1', rising: 55, falling: 12 },
   { id: 'DeFi', name: '디파이', value: '510조 9870억', change: {'1D': 5.1, '1W': 8.9, '1M': 18.0, '1Y': 180.0}, isCrypto: true, symbol: '', color: '#F9D423', rising: 80, falling: 40 },
   { id: 'RWA', name: '실물자산(RWA)', value: '390조 3300억', change: {'1D': 3.9, '1W': 6.1, '1M': 12.0, '1Y': 450.0}, isCrypto: true, symbol: '', color: '#A9A9A9', rising: 18, falling: 5 },
-  { id: 'DOGE_owned', name: '도지코인', value: '215', change: {'1D': 3.5, '1W': 6.8, '1M': 1.2, '1Y': 80.0}, isCrypto: true, symbol: '₩', color: '#C2A633', img: 'https://cryptologos.cc/logos/dogecoin-doge-logo.svg' },
+  { id: 'DOGE_owned', name: '도지코인', value: '215', change: {'1D': 3.5, '1W': 6.8, '1M': 1.2, '1Y': 80.0}, isCrypto: true, symbol: '₩', color: '#C2A633', img: 'https://cryptologos.cc/logos/dogecoin-doge-logo.svg', averagePrice: 850, quantity: 5000 },
   { id: 'SOL_watch', name: '솔라나', value: '210,000', change: {'1D': 5.1, '1W': 8.2, '1M': 15.0, '1Y': 250.0}, isCrypto: true, symbol: '₩', color: '#14F195', img: 'https://cryptologos.cc/logos/solana-sol-logo.svg' },
   { id: 'XRP_watch', name: '리플', value: '705', change: {'1D': -1.2, '1W': -3.5, '1M': -8.0, '1Y': -15.0}, isCrypto: true, symbol: '₩', color: '#B0B0B0', img: 'https://cryptologos.cc/logos/xrp-xrp-logo.svg' },
   { id: 'WLD_watch', name: '월드코인', value: '6,200', change: {'1D': 12.4, '1W': 18.2, '1M': 25.0, '1Y': 300.0}, isCrypto: true, symbol: '₩', color: '#7D7D7D', img: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.svg' },
@@ -56,22 +57,36 @@ const allAssets = [
   { id: 'ONDO', name: '온도', value: '1,650', change: {'1D': -4.5, '1W': -12.0, '1M': 25.0, '1Y': 500.0}, isCrypto: true, symbol: '₩', color: '#f4b41a', img: 'https://cryptologos.cc/logos/ondo-ondo-logo.svg' },
   { id: 'PYTH', name: '파이스네트워크', value: '450', change: {'1D': 3.8, '1W': 9.2, '1M': 18.0, '1Y': 300.0}, isCrypto: true, symbol: '₩', color: '#E6007A', img: 'https://cryptologos.cc/logos/pyth-network-pyth-logo.svg' },
   { id: 'SNX', name: '신세틱스', value: '3,800', change: {'1D': -1.5, '1W': 1.8, '1M': 6.0, '1Y': 80.0}, isCrypto: true, symbol: '₩', color: '#00d1ff', img: 'https://cryptologos.cc/logos/synthetix-snx-logo.svg' },
+  { id: 'AGIX', name: '싱귤래리티넷', value: '1,200', change: {'1D': 8.5, '1W': 15.2, '1M': 28.0, '1Y': 180.0}, isCrypto: true, symbol: '₩', color: '#FB542B', img: 'https://cryptologos.cc/logos/singularitynet-agix-logo.svg' },
+  { id: 'FET', name: '페치', value: '2,800', change: {'1D': 12.3, '1W': 22.5, '1M': 35.0, '1Y': 250.0}, isCrypto: true, symbol: '₩', color: '#202020', img: 'https://cryptologos.cc/logos/fetch-ai-fet-logo.svg' },
+  { id: 'OCEAN', name: '오션 프로토콜', value: '950', change: {'1D': 5.8, '1W': 11.2, '1M': 20.0, '1Y': 150.0}, isCrypto: true, symbol: '₩', color: '#141414', img: 'https://cryptologos.cc/logos/ocean-protocol-ocean-logo.svg' },
+  { id: 'MATIC', name: '폴리곤', value: '850', change: {'1D': 4.2, '1W': 8.5, '1M': 15.0, '1Y': 120.0}, isCrypto: true, symbol: '₩', color: '#8247E5', img: 'https://cryptologos.cc/logos/polygon-matic-logo.svg' },
+  { id: 'MKR', name: '메이커', value: '3,500,000', change: {'1D': 2.1, '1W': 5.5, '1M': 12.0, '1Y': 180.0}, isCrypto: true, symbol: '₩', color: '#1AAB9B', img: 'https://cryptologos.cc/logos/maker-mkr-logo.svg' },
 ];
 
 const dataSets: { [key: string]: any[] } = {
     indices: allAssets.filter(a => ['BTC', 'ETH', 'SP500', 'NASDAQ', 'KOSPI', 'KOSDAQ', 'GOLD'].includes(a.id)),
-    themes: allAssets.filter(a => ['AI', 'L2', 'GAME', 'DeFi', 'RWA'].includes(a.id)),
+    themes: allAssets.filter(a => ['L1', 'L2', 'AI', 'DePIN', 'RWA', 'GAME', 'DeFi', 'SERVICE', 'MEME', 'SOCIAL', 'NFT', 'PAYMENT', 'METAVERSE', 'FAN'].includes(a.id)),
     trending: allAssets.filter(a => a.id.endsWith('_trend')),
     owned: allAssets.filter(a => ['BTC', 'ETH', 'DOGE_owned'].includes(a.id)),
     watchlist: [],
 };
 
 const themeAssets: Record<string, string[]> = {
-    'AI': ['WLD_watch', 'RNDR', 'API3_trend'],
-    'L2': ['ARB', 'OP', 'IMX'],
+    'L1': ['BTC', 'ETH', 'SOL'],
+    'L2': ['ARB', 'IMX', 'MATIC'],
+    'AI': ['WLD_watch', 'AGIX', 'OCEAN'],
+    'DePIN': ['PYTH', 'SNX'],
+    'RWA': ['PYTH', 'SNX', 'MKR'],
     'GAME': ['AXS', 'SAND', 'IMX'],
     'DeFi': ['UNI', 'AAVE', 'COMP'],
-    'RWA': ['ONDO', 'PYTH', 'SNX'],
+    'SERVICE': ['UNI', 'AAVE', 'COMP'],
+    'MEME': ['DOGE', 'BTC', 'ETH'],
+    'SOCIAL': ['WLD_watch', 'BTC', 'ETH'],
+    'NFT': ['IMX', 'SAND'],
+    'PAYMENT': ['XRP', 'BTC', 'ETH'],
+    'METAVERSE': ['SAND', 'AXS'],
+    'FAN': ['DOGE', 'BTC', 'ETH'],
 }
 
 const createSeededRandom = (seedString: string) => {
@@ -198,6 +213,26 @@ export function MarketOverview() {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>(['BTC', 'ETH', 'SP500']);
   const [watchlistAssets, setWatchlistAssets] = useState<any[]>(dataSets['watchlist']);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [calculatorMode, setCalculatorMode] = useState<'average' | 'marketcap'>('average');
+  const [selectedAssetForCalc, setSelectedAssetForCalc] = useState<any>(null);
+
+  // 티커명 매핑 (id -> 티커명)
+  const tickerMapping: Record<string, string> = {
+    'USDE_trend': 'USDE',
+    'BREVIS_trend': 'BREV',
+    'XAUT_trend': 'XAUT',
+    'GK_PASS_trend': 'ZKP',
+    'THEORIC_trend': 'THQ',
+  };
+
+  const getTicker = (id: string): string => {
+    if (tickerMapping[id]) {
+      return tickerMapping[id];
+    }
+    // _trend를 제거한 것을 기본 티커명으로 사용
+    return id.replace('_trend', '');
+  };
 
   const marketData = activeTab === 'watchlist' ? watchlistAssets : dataSets[activeTab];
 
@@ -273,7 +308,7 @@ export function MarketOverview() {
   }
 
   const unselectedWatchlistAssets = allAssets.filter(
-    (asset) => !watchlistAssets.some(wa => wa.id === asset.id) && !asset.id.includes('trend') && !['AI','L2','GAME','DeFi','RWA'].includes(asset.id) && !asset.id.includes('owned')
+    (asset) => !watchlistAssets.some(wa => wa.id === asset.id) && !asset.id.includes('trend') && !['L1','L2','AI','DePIN','RWA','GAME','DeFi','SERVICE','MEME','SOCIAL','NFT','PAYMENT','METAVERSE','FAN','RNDR','ONDO','OP'].includes(asset.id) && !asset.id.includes('owned') && asset.img
   );
 
   const CompareModeTooltip = ({ active, payload, label }: any) => {
@@ -327,13 +362,41 @@ export function MarketOverview() {
                                 {isSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                             </div>
                         )}
+                        {(activeTab === 'indices' || activeTab === 'owned') && item.img && (
+                            <Avatar className="h-6 w-6 mr-3 shrink-0">
+                                <AvatarImage src={item.img} alt={item.name} />
+                                <AvatarFallback className="text-[10px]" style={{ backgroundColor: item.color, color: 'white' }}>{item.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        )}
                         <div className="flex-1 text-left min-w-0" onClick={() => !isCompareMode && handleAssetSelection(item.id)}>
-                            <span className="text-sm font-semibold text-foreground truncate">{item.name}</span>
+                            <span className="text-sm font-semibold text-foreground truncate">
+                                {item.name}
+                                {(activeTab === 'indices' || activeTab === 'owned') && (
+                                    <span className="text-xs text-muted-foreground ml-1">
+                                        ({item.id.replace('_owned', '')})
+                                    </span>
+                                )}
+                                {activeTab === 'trending' && item.id.includes('_trend') && (
+                                    <span className="text-xs text-muted-foreground ml-1">
+                                        ({getTicker(item.id)})
+                                    </span>
+                                )}
+                            </span>
                             {activeTab === 'themes' && item.rising !== undefined && (
                                 <div className="text-xs text-muted-foreground mt-1">
                                     <span className="text-red-500">↑{item.rising}</span>
                                     <span className="mx-1">/</span>
                                     <span className="text-blue-500">↓{item.falling}</span>
+                                </div>
+                            )}
+                            {activeTab === 'trending' && (item as any).daysAgo !== undefined && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {(item as any).daysAgo}일 전 상장
+                                </div>
+                            )}
+                            {activeTab === 'watchlist' && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {item.id.replace('_watch', '')}
                                 </div>
                             )}
                         </div>
@@ -352,16 +415,22 @@ export function MarketOverview() {
                     </div>
                 );
 
+
                 if (activeTab === 'themes') {
                     const assetsInTheme = (themeAssets[item.id] || [])
                         .map(assetId => allAssets.find(a => a.id === assetId))
                         .filter(Boolean) as (typeof allAssets[0])[];
                      return (
-                         <Collapsible key={item.id} open={!isCompareMode ? activeIndex === item.id : undefined} onOpenChange={(isOpen) => {
-                             if(!isCompareMode) {
-                                if (isOpen) setActiveIndex(item.id);
-                                else if(activeIndex === item.id) setActiveIndex("");
-                             }
+                         <Collapsible key={item.id} open={activeIndex === item.id} onOpenChange={(isOpen) => {
+                                if (isOpen) {
+                                    setActiveIndex(item.id);
+                                    if (!isCompareMode) {
+                                        setChartActiveIndex(item.id);
+                                    }
+                                } else if(activeIndex === item.id) {
+                                    setActiveIndex("");
+                                    // 드롭다운을 닫을 때는 차트를 유지 (chartActiveIndex는 변경하지 않음)
+                                }
                          }}>
                             <div className={cn('group flex items-center', isSelected && !isCompareMode ? "bg-muted" : "hover:bg-muted/50")}>
                                 <div className='w-full flex items-center rounded-lg'>
@@ -428,9 +497,10 @@ export function MarketOverview() {
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm font-semibold truncate">{subItem.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{subItem.id}</div>
                                                 </div>
                                                 <div className="w-24 text-right">
-                                                    <div className="font-mono text-sm">{subItem.value}</div>
+                                                    <div className="font-mono text-sm">{subItem.symbol}{subItem.value}</div>
                                                      <div className={`text-xs font-semibold`} style={{ color: subItemIsPositive ? redColor : blueColor }}>
                                                         {subItemIsPositive ? '▲' : '▼'} {Math.abs(subItemChange).toFixed(2)}%
                                                     </div>
@@ -519,6 +589,16 @@ export function MarketOverview() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2">
                 {renderAssetList()}
+                {activeTab === 'owned' && (
+                    <Button 
+                        variant="outline" 
+                        className="w-full mt-2 h-12"
+                        onClick={() => setIsCalculatorOpen(true)}
+                    >
+                        <Calculator className="w-4 h-4 mr-2" />
+                        계산기
+                    </Button>
+                )}
                 {activeTab === 'watchlist' && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -527,14 +607,45 @@ export function MarketOverview() {
                                 관심 종목 추가
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-[300px]" align="start">
-                            {unselectedWatchlistAssets.map(asset => (
-                                <DropdownMenuItem key={asset.id} onSelect={() => addToWatchlist(asset.id)}>
-                                    {asset.name} ({asset.id})
-                                </DropdownMenuItem>
-                            ))}
+                        <DropdownMenuContent className="w-[360px]" align="start">
+                            <div className="max-h-[400px] overflow-y-auto">
+                                {unselectedWatchlistAssets.map(asset => {
+                                    const assetChange = asset.change[activePeriod as keyof typeof asset.change];
+                                    const assetIsPositive = assetChange >= 0;
+                                    const assetColor = assetIsPositive ? redColor : blueColor;
+                                    
+                                    return (
+                                        <DropdownMenuItem 
+                                            key={asset.id} 
+                                            onSelect={() => addToWatchlist(asset.id)}
+                                            className="p-3 cursor-pointer"
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <Avatar className="h-8 w-8 shrink-0">
+                                                        <AvatarImage src={asset.img} alt={asset.name} />
+                                                        <AvatarFallback>{asset.name?.charAt(0) || asset.id.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-semibold text-foreground truncate">{asset.name}</div>
+                                                        <div className="text-xs text-muted-foreground">{asset.id.replace('_watch', '')}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right ml-4 shrink-0">
+                                                    <div className="text-sm font-bold text-foreground">{asset.symbol}{asset.value}</div>
+                                                    <div className={`text-xs font-semibold`} style={{ color: assetColor }}>
+                                                        {assetIsPositive ? '+' : ''}{assetChange.toFixed(2)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </div>
                             {unselectedWatchlistAssets.length === 0 && (
-                                <DropdownMenuItem disabled>추가할 수 있는 종목이 없습니다.</DropdownMenuItem>
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                    추가할 수 있는 종목이 없습니다.
+                                </div>
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -659,6 +770,441 @@ export function MarketOverview() {
             </div>
         </div>
       </CardContent>
+      
+      {/* 계산기 다이얼로그 */}
+      <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>보유종목 계산기</DialogTitle>
+            <DialogDescription>
+              물타기 평단가 계산 또는 시가총액 비교 시뮬레이션을 선택하세요
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant={calculatorMode === 'average' ? 'default' : 'outline'}
+              onClick={() => {
+                setCalculatorMode('average');
+                setSelectedAssetForCalc(null);
+              }}
+              className="flex-1"
+            >
+              물타기/평단 계산기
+            </Button>
+            <Button
+              variant={calculatorMode === 'marketcap' ? 'default' : 'outline'}
+              onClick={() => {
+                setCalculatorMode('marketcap');
+                setSelectedAssetForCalc(null);
+              }}
+              className="flex-1"
+            >
+              시가총액 비교 계산기
+            </Button>
+          </div>
+
+          {calculatorMode === 'average' ? (
+            <AveragePriceCalculator 
+              assets={marketData} 
+              selectedAsset={selectedAssetForCalc}
+              onAssetSelect={setSelectedAssetForCalc}
+            />
+          ) : (
+            <MarketCapCalculator 
+              assets={marketData}
+              selectedAsset={selectedAssetForCalc}
+              onAssetSelect={setSelectedAssetForCalc}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
+  );
+}
+
+// 물타기/평단 계산기 컴포넌트
+function AveragePriceCalculator({ assets, selectedAsset, onAssetSelect }: { assets: any[], selectedAsset: any, onAssetSelect: (asset: any) => void }) {
+  const [currentPrice, setCurrentPrice] = useState('');
+  const [currentQuantity, setCurrentQuantity] = useState('');
+  const [additionalQuantity, setAdditionalQuantity] = useState('');
+
+  // selectedAsset이 변경될 때 자동으로 값 채우기
+  useEffect(() => {
+    if (selectedAsset) {
+      if (selectedAsset.averagePrice) {
+        setCurrentPrice(selectedAsset.averagePrice.toString());
+      } else {
+        const price = parseFloat(selectedAsset.value.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        setCurrentPrice(price.toString());
+      }
+      if (selectedAsset.quantity) {
+        setCurrentQuantity(selectedAsset.quantity.toString());
+      }
+      setAdditionalQuantity('');
+    } else {
+      setCurrentPrice('');
+      setCurrentQuantity('');
+      setAdditionalQuantity('');
+    }
+  }, [selectedAsset]);
+
+  const calculations = useMemo(() => {
+    if (!selectedAsset || !currentPrice || !currentQuantity) {
+      return null;
+    }
+
+    const currentPriceNum = parseFloat(currentPrice.replace(/,/g, ''));
+    const currentQuantityNum = parseFloat(currentQuantity.replace(/,/g, ''));
+    
+    if (isNaN(currentPriceNum) || isNaN(currentQuantityNum)) {
+      return null;
+    }
+
+    // 추가 매수 정보가 있으면 포함, 없으면 현재 정보만으로 계산
+    // 추가 매수가는 현재 시장 가격으로 고정
+    const currentMarketPrice = parseFloat(selectedAsset.value.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    const additionalPriceNum = additionalQuantity ? currentMarketPrice : 0;
+    const additionalQuantityNum = additionalQuantity ? parseFloat(additionalQuantity.replace(/,/g, '')) : 0;
+
+    const totalInvestment = (currentPriceNum * currentQuantityNum) + (additionalPriceNum * additionalQuantityNum);
+    const totalQuantity = currentQuantityNum + (additionalQuantityNum || 0);
+    const averagePrice = totalQuantity > 0 ? totalInvestment / totalQuantity : currentPriceNum;
+    const profitLossPercent = ((currentMarketPrice - averagePrice) / averagePrice) * 100;
+
+    return {
+      averagePrice,
+      totalQuantity,
+      totalInvestment,
+      profitLossPercent,
+      currentMarketPrice
+    };
+  }, [selectedAsset, currentPrice, currentQuantity, additionalQuantity]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Label className="text-sm font-semibold mb-2 block">보유 종목 선택</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {assets.map((asset) => (
+            <Button
+              key={asset.id}
+              variant={selectedAsset?.id === asset.id ? 'default' : 'outline'}
+              onClick={() => {
+                onAssetSelect(asset);
+              }}
+              className="justify-start"
+            >
+              {asset.img && (
+                <Avatar className="h-5 w-5 mr-2">
+                  <AvatarImage src={asset.img} alt={asset.name} />
+                  <AvatarFallback className="text-[10px]" style={{ backgroundColor: asset.color, color: 'white' }}>
+                    {asset.name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {asset.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {selectedAsset && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="current-price" className="text-sm font-medium mb-2 block">
+                현재 평단가
+              </Label>
+              <Input
+                id="current-price"
+                type="text"
+                value={currentPrice}
+                onChange={(e) => setCurrentPrice(e.target.value.replace(/[^0-9.,]/g, ''))}
+                className="w-full"
+                disabled={!!selectedAsset?.averagePrice}
+              />
+            </div>
+            <div>
+              <Label htmlFor="current-quantity" className="text-sm font-medium mb-2 block">
+                현재 보유 수량
+              </Label>
+              <Input
+                id="current-quantity"
+                type="text"
+                value={currentQuantity}
+                onChange={(e) => setCurrentQuantity(e.target.value.replace(/[^0-9.,]/g, ''))}
+                className="w-full"
+                disabled={!!selectedAsset?.quantity}
+              />
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+     
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="additional-price" className="text-sm font-medium mb-2 block">
+                  추가 매수가
+                </Label>
+                <Input
+                  id="additional-price"
+                  type="text"
+                  value={selectedAsset ? parseFloat(selectedAsset.value.replace(/,/g, '').replace(/[^0-9.-]/g, '')).toLocaleString('ko-KR') : ''}
+                  className="w-full"
+                  disabled
+                />
+                <p className="text-xs text-muted-foreground mt-1">현재 시장 가격</p>
+              </div>
+              <div>
+                <Label htmlFor="additional-quantity" className="text-sm font-medium mb-2 block">
+                  추가 수량
+                </Label>
+                <Input
+                  id="additional-quantity"
+                  type="text"
+                  value={additionalQuantity}
+                  onChange={(e) => setAdditionalQuantity(e.target.value.replace(/[^0-9.,]/g, ''))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {calculations && (
+            <div className="bg-muted/50 rounded-lg p-6 space-y-4 border">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">예상 평단가</div>
+                <div className="text-2xl font-bold text-orange-500">
+                  {calculations.averagePrice.toLocaleString('ko-KR')}원
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">현재 수익률</div>
+                <div className={cn(
+                  "text-2xl font-bold",
+                  calculations.profitLossPercent >= 0 ? 'text-green-500' : 'text-red-500'
+                )}>
+                  {calculations.profitLossPercent >= 0 ? '+' : ''}{calculations.profitLossPercent.toFixed(2)}%
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">총 보유량</div>
+                  <div className="text-lg font-semibold">
+                    {calculations.totalQuantity.toLocaleString('ko-KR')} {selectedAsset.id.replace('_owned', '')}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">총 투자금</div>
+                  <div className="text-lg font-semibold">
+                    {Math.round(calculations.totalInvestment).toLocaleString('ko-KR')}원
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// 시가총액 비교 계산기 컴포넌트
+function MarketCapCalculator({ assets, selectedAsset, onAssetSelect }: { assets: any[], selectedAsset: any, onAssetSelect: (asset: any) => void }) {
+  const [compareAsset, setCompareAsset] = useState<any>(null);
+  const [currentQuantity, setCurrentQuantity] = useState('');
+  const [currentAveragePrice, setCurrentAveragePrice] = useState('');
+
+  // selectedAsset이 변경될 때 자동으로 값 채우기
+  useEffect(() => {
+    if (selectedAsset) {
+      if (selectedAsset.averagePrice) {
+        setCurrentAveragePrice(selectedAsset.averagePrice.toString());
+      }
+      if (selectedAsset.quantity) {
+        setCurrentQuantity(selectedAsset.quantity.toString());
+      }
+      setCompareAsset(null);
+    } else {
+      setCurrentQuantity('');
+      setCurrentAveragePrice('');
+      setCompareAsset(null);
+    }
+  }, [selectedAsset]);
+
+  const topAssets = useMemo(() => {
+    return themeAllAssets.filter(a => ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP'].includes(a.id));
+  }, []);
+
+  const calculations = useMemo(() => {
+    if (!selectedAsset || !compareAsset || !currentQuantity || !currentAveragePrice) {
+      return null;
+    }
+
+    // themeAllAssets에서 marketCap 가져오기
+    const selectedThemeAsset = themeAllAssets.find(a => a.id === selectedAsset.id.replace('_owned', ''));
+    const compareThemeAsset = themeAllAssets.find(a => a.id === compareAsset.id);
+    
+    if (!selectedThemeAsset?.marketCap || !compareThemeAsset?.marketCap) return null;
+
+    // "1,382조" 형식을 숫자로 변환 (조 = 1조 = 1e12)
+    const parseMarketCap = (str: string): number => {
+      const cleaned = str.replace(/[^0-9.,조억]/g, '');
+      if (cleaned.includes('조')) {
+        const parts = cleaned.split('조');
+        const jo = parseFloat(parts[0].replace(/,/g, '')) || 0;
+        const eok = parts[1] ? parseFloat(parts[1].replace(/[억,]/g, '')) || 0 : 0;
+        return jo * 1e12 + eok * 1e8;
+      } else if (cleaned.includes('억')) {
+        return parseFloat(cleaned.replace(/[억,]/g, '')) * 1e8;
+      }
+      return parseFloat(cleaned.replace(/,/g, '')) || 0;
+    };
+
+    const selectedMarketCap = parseMarketCap(selectedThemeAsset.marketCap);
+    const compareMarketCap = parseMarketCap(compareThemeAsset.marketCap);
+    
+    if (!selectedMarketCap || !compareMarketCap) return null;
+
+    const currentPrice = parseFloat(selectedAsset.value.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    const targetPrice = (currentPrice * compareMarketCap) / selectedMarketCap;
+    const requiredIncrease = ((targetPrice - currentPrice) / currentPrice) * 100;
+    
+    const quantity = parseFloat(currentQuantity.replace(/,/g, ''));
+    const averagePrice = parseFloat(currentAveragePrice.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    
+    if (isNaN(quantity) || isNaN(averagePrice)) return null;
+
+    const currentValue = quantity * currentPrice;
+    const targetValue = quantity * targetPrice;
+
+    return {
+      targetPrice,
+      requiredIncrease,
+      currentValue,
+      targetValue
+    };
+  }, [selectedAsset, compareAsset, currentQuantity, currentAveragePrice]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Label className="text-sm font-semibold mb-2 block">내 보유 종목</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {assets.map((asset) => (
+            <Button
+              key={asset.id}
+              variant={selectedAsset?.id === asset.id ? 'default' : 'outline'}
+              onClick={() => {
+                onAssetSelect(asset);
+              }}
+              className="justify-start"
+            >
+              {asset.img && (
+                <Avatar className="h-5 w-5 mr-2">
+                  <AvatarImage src={asset.img} alt={asset.name} />
+                  <AvatarFallback className="text-[10px]" style={{ backgroundColor: asset.color, color: 'white' }}>
+                    {asset.name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {asset.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {selectedAsset && (
+        <>
+          <div>
+            <Label className="text-sm font-semibold mb-2 block">비교할 대상 코인</Label>
+            <div className="flex flex-wrap gap-2">
+              {topAssets.map((asset) => (
+                <Button
+                  key={asset.id}
+                  variant={compareAsset?.id === asset.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCompareAsset(asset)}
+                >
+                  {asset.img && (
+                    <Avatar className="h-4 w-4 mr-1.5">
+                      <AvatarImage src={asset.img} alt={asset.name} />
+                      <AvatarFallback className="text-[8px]" style={{ backgroundColor: asset.color, color: 'white' }}>
+                        {asset.name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  {asset.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="calc-quantity" className="text-sm font-medium mb-2 block">
+                보유 수량
+              </Label>
+              <Input
+                id="calc-quantity"
+                type="text"
+                value={currentQuantity}
+                onChange={(e) => setCurrentQuantity(e.target.value.replace(/[^0-9.,]/g, ''))}
+                className="w-full"
+                disabled={!!selectedAsset?.quantity}
+              />
+            </div>
+            <div>
+              <Label htmlFor="calc-avg-price" className="text-sm font-medium mb-2 block">
+                평단가
+              </Label>
+              <Input
+                id="calc-avg-price"
+                type="text"
+                value={currentAveragePrice}
+                onChange={(e) => setCurrentAveragePrice(e.target.value.replace(/[^0-9.,]/g, ''))}
+                className="w-full"
+                disabled={!!selectedAsset?.averagePrice}
+              />
+            </div>
+          </div>
+
+          {calculations && compareAsset && (
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg p-6 space-y-6 border border-purple-200 dark:border-purple-800">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground mb-2">
+                  {selectedAsset.name}이(가) {compareAsset.name} 시가총액이 되면
+                </div>
+                <div className="text-3xl font-bold text-orange-500 mb-4">
+                  {calculations.targetPrice.toLocaleString('ko-KR')}원
+                </div>
+                <div className="inline-block bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                  현재가 대비 {calculations.requiredIncrease >= 0 ? '+' : ''}{calculations.requiredIncrease.toFixed(2)}% 상승 필요
+                </div>
+              </div>
+
+              <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">현재 평가금액</span>
+                  <span className="text-lg font-semibold">
+                    {(calculations.currentValue / 10000).toFixed(1)}만원
+                  </span>
+                </div>
+                <div className="flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">예상 평가금액</span>
+                  <span className="text-2xl font-bold text-orange-500">
+                    {(calculations.targetValue / 10000).toFixed(1)}만원
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

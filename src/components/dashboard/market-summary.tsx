@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, AreaChart, PieChart, GitCompareArrows, Gauge, Search, TrendingUp, TrendingDown, Flame, Waves, ChevronDown } from 'lucide-react';
+import { ArrowRight, AreaChart, PieChart, GitCompareArrows, Gauge, Search, TrendingUp, TrendingDown, Flame, Waves, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -583,102 +583,328 @@ const CoinListDialog = ({ trigger, title, description, coins, emptyText }: { tri
 
 export function MarketSummary() {
   const isMarketUp = summaryData.risingAssetsCount > summaryData.fallingAssetsCount;
+  const [risingFallingDialogOpen, setRisingFallingDialogOpen] = useState(false);
+  const [trendSignalDialogOpen, setTrendSignalDialogOpen] = useState(false);
+  const [rsiDialogOpen, setRsiDialogOpen] = useState(false);
+  const [volumeDialogOpen, setVolumeDialogOpen] = useState(false);
 
   return (
+    <>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* 24시간 상승/하락 */}
-                <Card className="flex flex-col items-center justify-between p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-foreground text-sm">상승/하락 수</h4>
-                    </div>
-                    <div className="flex gap-4 items-end mb-4 h-12">
-                        <div className="text-center">
-                            <div className="text-xs text-green-500">상승</div>
-                            <div className="text-2xl font-bold text-green-500">{summaryData.risingAssetsCount}</div>
+                <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-sm text-foreground">상승/하락 수</h4>
+                            <button
+                              onClick={() => setRisingFallingDialogOpen(true)}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
-                        <div className="text-center">
-                             <div className="text-xs text-red-500">하락</div>
-                            <div className="text-2xl font-bold text-red-500">{summaryData.fallingAssetsCount}</div>
+                        <div className="flex gap-0 mb-3">
+                            <div className="flex-1 text-right pr-2">
+                                <div className="text-xs text-muted-foreground mb-1">상승</div>
+                                <div className="text-2xl font-bold text-green-600">{summaryData.risingAssetsCount}</div>
+                            </div>
+                            <div className="w-px bg-border" />
+                            <div className="flex-1 text-left pl-2">
+                                <div className="text-xs text-muted-foreground mb-1">하락</div>
+                                <div className="text-2xl font-bold text-red-600">{summaryData.fallingAssetsCount}</div>
+                            </div>
                         </div>
+                        <Link href={`/internal-data?tab=comparison&filter=change&direction=${isMarketUp ? 'up' : 'down'}`}>
+                            <Button variant="ghost" size="sm" className="w-full text-xs h-7 hover:bg-green-500/10">
+                                {isMarketUp ? '상승 종목 전체보기' : '반등 기대주 찾기'}
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                        </Link>
                     </div>
-                    <Link href={`/internal-data?tab=comparison&filter=change&direction=${isMarketUp ? 'up' : 'down'}`}>
-                        <Button variant="outline" size="sm" className="w-full mt-auto text-xs h-8">
-                            {isMarketUp ? '상승 종목 전체보기' : '반등 기대주 찾기'}
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                        </Button>
-                    </Link>
                 </Card>
 
                 {/* 추세 신호 */}
-                <Card className="flex flex-col items-center justify-between p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-foreground text-sm">추세 신호</h4>
-                    </div>
-                     <div className="flex gap-4 items-end mb-4 h-12">
-                        <div className="text-center">
-                            <div className="text-xs text-red-500">골든크로스</div>
-                            <div className="text-2xl font-bold text-red-500">{summaryData.goldenCrossCount}</div>
+                <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-sm text-foreground">추세 신호</h4>
+                            <button
+                              onClick={() => setTrendSignalDialogOpen(true)}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
-                        <div className="text-center">
-                             <div className="text-xs text-blue-500">데드크로스</div>
-                            <div className="text-2xl font-bold text-blue-500">{summaryData.deadCrossCount}</div>
+                        <div className="flex gap-0 mb-3">
+                            <div className="flex-1 text-right pr-2">
+                                <div className="text-xs text-muted-foreground mb-1">골든크로스</div>
+                                <div className="text-2xl font-bold text-orange-600">{summaryData.goldenCrossCount}</div>
+                            </div>
+                            <div className="w-px bg-border" />
+                            <div className="flex-1 text-left pl-2">
+                                <div className="text-xs text-muted-foreground mb-1">데드크로스</div>
+                                <div className="text-2xl font-bold text-blue-600">{summaryData.deadCrossCount}</div>
+                            </div>
                         </div>
+                        <Link href="/internal-data?tab=comparison&filter=ma&crossover=golden">
+                            <Button variant="ghost" size="sm" className="w-full text-xs h-7 hover:bg-orange-500/10">
+                                골든크로스 전체보기
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                        </Link>
                     </div>
-                    <Link href="/internal-data?tab=comparison&filter=ma&crossover=golden">
-                        <Button variant="outline" size="sm" className="w-full mt-auto text-xs h-8">
-                            골든크로스 전체보기
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                        </Button>
-                    </Link>
                 </Card>
 
                 {/* RSI 과매수/과매도 */}
-                <Card className="flex flex-col items-center justify-between p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-foreground text-sm">RSI 현황</h4>
-                    </div>
-                    <div className="flex gap-4 items-end mb-4 h-12">
-                        <div className="text-center">
-                            <div className="text-xs text-red-500">과매수</div>
-                            <div className="text-2xl font-bold text-red-500">{summaryData.overboughtCount}</div>
+                <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-sm text-foreground">RSI 현황</h4>
+                            <button
+                              onClick={() => setRsiDialogOpen(true)}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
-                        <div className="text-center">
-                             <div className="text-xs text-blue-500">과매도</div>
-                            <div className="text-2xl font-bold text-blue-500">{summaryData.oversoldCount}</div>
+                        <div className="flex gap-0 mb-3">
+                            <div className="flex-1 text-right pr-2">
+                                <div className="text-xs text-muted-foreground mb-1">과매수</div>
+                                <div className="text-2xl font-bold text-red-600">{summaryData.overboughtCount}</div>
+                            </div>
+                            <div className="w-px bg-border" />
+                            <div className="flex-1 text-left pl-2">
+                                <div className="text-xs text-muted-foreground mb-1">과매도</div>
+                                <div className="text-2xl font-bold text-blue-600">{summaryData.oversoldCount}</div>
+                            </div>
                         </div>
+                        <Link href="/internal-data?tab=comparison&filter=rsi&range=oversold">
+                            <Button variant="ghost" size="sm" className="w-full text-xs h-7 hover:bg-purple-500/10">
+                                과매수/과매도 전체보기
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                        </Link>
                     </div>
-                    <Link href="/internal-data?tab=comparison&filter=rsi&range=oversold">
-                        <Button variant="outline" size="sm" className="w-full mt-auto text-xs h-8">
-                            과매수/과매도 전체보기
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                        </Button>
-                    </Link>
                 </Card>
 
                 {/* 상대거래량 */}
-                <Card className="flex flex-col items-center justify-between p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-foreground text-sm">거래량 현황</h4>
-                    </div>
-                    <div className="flex gap-4 items-end mb-4 h-12">
-                        <div className="text-center">
-                              <div className="text-xs text-red-500">거래량 과열</div>
-                            <div className="text-2xl font-bold text-red-500">{summaryData.volumeSpikeCount}</div>
+                <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-sm text-foreground">거래량 현황</h4>
+                            <button
+                              onClick={() => setVolumeDialogOpen(true)}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
-                        <div className="text-center">
-                            <div className="text-xs text-blue-500">거래량 침체</div>
-                            <div className="text-2xl font-bold text-blue-500">{summaryData.volumeDropCount}</div>
+                        <div className="flex gap-0 mb-3">
+                            <div className="flex-1 text-right pr-2">
+                                <div className="text-xs text-muted-foreground mb-1">거래량 과열</div>
+                                <div className="text-2xl font-bold text-red-600">{summaryData.volumeSpikeCount}</div>
+                            </div>
+                            <div className="w-px bg-border" />
+                            <div className="flex-1 text-left pl-2">
+                                <div className="text-xs text-muted-foreground mb-1">거래량 침체</div>
+                                <div className="text-2xl font-bold text-blue-600">{summaryData.volumeDropCount}</div>
+                            </div>
                         </div>
+                        <Link href="/internal-data?tab=comparison&filter=volume">
+                            <Button variant="ghost" size="sm" className="w-full text-xs h-7 hover:bg-cyan-500/10">
+                                거래량 과열/침체 전체보기
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                        </Link>
                     </div>
-                    <Link href="/internal-data?tab=comparison&filter=volume">
-                        <Button variant="outline" size="sm" className="w-full mt-auto text-xs h-8">
-                            거래량 과열/침체 전체보기
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                        </Button>
-                    </Link>
                 </Card>
             </div>
+
+      {/* 상승/하락 수 설명 다이얼로그 */}
+      <Dialog open={risingFallingDialogOpen} onOpenChange={setRisingFallingDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">상승/하락 수</DialogTitle>
+            <DialogDescription>
+              지난 24시간 동안 가격이 오른 종목과 내린 종목의 개수를 보여줘요. 시장 전체의 분위기를 한눈에 파악할 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            <div className="bg-muted/30 rounded-lg p-5 border border-border/50">
+              <h3 className="font-semibold text-sm mb-3">어떻게 활용하나요?</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold mb-1">상승 종목이 많을 때</div>
+                    <div className="text-muted-foreground">시장이 강세예요. 상승 종목을 중심으로 투자 기회를 찾아보세요.</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <TrendingDown className="w-3.5 h-3.5 text-red-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold mb-1">하락 종목이 많을 때</div>
+                    <div className="text-muted-foreground">시장이 약세예요. 신중한 접근이 필요하고, 반등 기대주를 찾아볼 수 있어요.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-8 py-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-500 mb-1">{summaryData.risingAssetsCount}</div>
+                <div className="text-xs text-muted-foreground">상승 종목</div>
+              </div>
+              <div className="w-px h-12 bg-border" />
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-500 mb-1">{summaryData.fallingAssetsCount}</div>
+                <div className="text-xs text-muted-foreground">하락 종목</div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 추세 신호 설명 다이얼로그 */}
+      <Dialog open={trendSignalDialogOpen} onOpenChange={setTrendSignalDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">추세 신호</DialogTitle>
+            <DialogDescription>
+              골든크로스와 데드크로스는 이동평균선이 교차할 때 발생하는 추세 전환 신호예요. 상승 추세와 하락 추세의 시작을 알려줘요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            <div className="bg-muted/30 rounded-lg p-5 border border-border/50">
+              <h3 className="font-semibold text-sm mb-4">골든크로스 vs 데드크로스</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4 border border-red-200 dark:border-red-900/30">
+                  <div className="font-semibold text-red-600 dark:text-red-400 mb-2">골든크로스</div>
+                  <div className="text-xs text-muted-foreground mb-3">단기 이동평균선이 장기 이동평균선을 아래에서 위로 뚫고 올라갈 때</div>
+                  <div className="text-xs font-medium text-foreground">→ 상승 추세 시작 신호</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-900/30">
+                  <div className="font-semibold text-blue-600 dark:text-blue-400 mb-2">데드크로스</div>
+                  <div className="text-xs text-muted-foreground mb-3">단기 이동평균선이 장기 이동평균선을 위에서 아래로 뚫고 내려갈 때</div>
+                  <div className="text-xs font-medium text-foreground">→ 하락 추세 시작 신호</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-8 py-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-500 mb-1">{summaryData.goldenCrossCount}</div>
+                <div className="text-xs text-muted-foreground">골든크로스</div>
+              </div>
+              <div className="w-px h-12 bg-border" />
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-500 mb-1">{summaryData.deadCrossCount}</div>
+                <div className="text-xs text-muted-foreground">데드크로스</div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* RSI 현황 설명 다이얼로그 */}
+      <Dialog open={rsiDialogOpen} onOpenChange={setRsiDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">RSI 현황</DialogTitle>
+            <DialogDescription>
+              RSI(상대강도지수)는 가격의 상승과 하락의 상대적 강도를 0-100으로 나타내는 지표예요. 과매수와 과매도 상태를 판단하는 데 활용돼요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            <div className="bg-muted/30 rounded-lg p-5 border border-border/50">
+              <h3 className="font-semibold text-sm mb-4">과매수 vs 과매도</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-red-600">70</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm mb-1">과매수 (RSI 70 이상)</div>
+                    <div className="text-xs text-muted-foreground">가격이 과도하게 올라서 조정 가능성이 높아요. 수익 실현을 고려해볼 시점이에요.</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-blue-600">30</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm mb-1">과매도 (RSI 30 이하)</div>
+                    <div className="text-xs text-muted-foreground">가격이 과도하게 내려서 반등 가능성이 높아요. 저점 매수 기회가 될 수 있어요.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-8 py-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-500 mb-1">{summaryData.overboughtCount}</div>
+                <div className="text-xs text-muted-foreground">과매수 종목</div>
+              </div>
+              <div className="w-px h-12 bg-border" />
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-500 mb-1">{summaryData.oversoldCount}</div>
+                <div className="text-xs text-muted-foreground">과매도 종목</div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 거래량 현황 설명 다이얼로그 */}
+      <Dialog open={volumeDialogOpen} onOpenChange={setVolumeDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">거래량 현황</DialogTitle>
+            <DialogDescription>
+              거래량이 평소보다 비정상적으로 많거나 적은 종목을 보여줘요. 거래량 변화는 가격 움직임의 신뢰도를 판단하는 중요한 지표예요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            <div className="bg-muted/30 rounded-lg p-5 border border-border/50">
+              <h3 className="font-semibold text-sm mb-4">거래량 과열 vs 침체</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Flame className="w-3.5 h-3.5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm mb-1">거래량 과열</div>
+                    <div className="text-xs text-muted-foreground">평소보다 거래량이 급증했어요. 큰 움직임이 예상되지만 변동성도 커질 수 있어요.</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Waves className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm mb-1">거래량 침체</div>
+                    <div className="text-xs text-muted-foreground">평소보다 거래량이 크게 줄었어요. 관망 세력이 많아 방향성이 불분명할 수 있어요.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-8 py-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-500 mb-1">{summaryData.volumeSpikeCount}</div>
+                <div className="text-xs text-muted-foreground">거래량 과열</div>
+              </div>
+              <div className="w-px h-12 bg-border" />
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-500 mb-1">{summaryData.volumeDropCount}</div>
+                <div className="text-xs text-muted-foreground">거래량 침체</div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
