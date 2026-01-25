@@ -15,16 +15,17 @@ import { Badge } from '../ui/badge';
 
 
 const summaryData = {
-  risingAssetsCount: 88,
-  fallingAssetsCount: 62,
-  overboughtCount: 12,
-  oversoldCount: 8,
-  volumeSpikeCount: 7,
-  volumeDropCount: 15,
+  totalAssetsCount: 300, // 전체 상장종목 수
+  risingAssetsCount: 250,
+  fallingAssetsCount: 50,
+  overboughtCount: 45,
+  oversoldCount: 28,
+  volumeSpikeCount: 32,
+  volumeDropCount: 18,
   fearGreedIndex: 48,
   yesterdayFearGreedIndex: 45,
-  goldenCrossCount: 5,
-  deadCrossCount: 2,
+  goldenCrossCount: 42,
+  deadCrossCount: 15,
   fearStateCount: 4,
   greedStateCount: 9,
 };
@@ -596,7 +597,10 @@ export function MarketSummary() {
                 <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-sm text-foreground">상승/하락 수</h4>
+                            <div>
+                                <h4 className="font-semibold text-sm text-foreground">상승/하락 수</h4>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">전체 {summaryData.totalAssetsCount}개 중</p>
+                            </div>
                             <button
                               onClick={() => setRisingFallingDialogOpen(true)}
                               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -604,15 +608,17 @@ export function MarketSummary() {
                               <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex gap-0 mb-3">
-                            <div className="flex-1 text-right pr-2">
-                                <div className="text-xs text-muted-foreground mb-1">상승</div>
-                                <div className="text-2xl font-bold text-green-600">{summaryData.risingAssetsCount}</div>
-                            </div>
-                            <div className="w-px bg-border" />
-                            <div className="flex-1 text-left pl-2">
-                                <div className="text-xs text-muted-foreground mb-1">하락</div>
-                                <div className="text-2xl font-bold text-red-600">{summaryData.fallingAssetsCount}</div>
+                        <div className="mb-2">
+                            <div className="flex gap-0">
+                                <div className="flex-1 text-right pr-2">
+                                    <div className="text-xs text-muted-foreground mb-1">상승</div>
+                                    <div className="text-2xl font-bold text-green-600">{summaryData.risingAssetsCount}</div>
+                                </div>
+                                <div className="w-px bg-border" />
+                                <div className="flex-1 text-left pl-2">
+                                    <div className="text-xs text-muted-foreground mb-1">하락</div>
+                                    <div className="text-2xl font-bold text-red-600">{summaryData.fallingAssetsCount}</div>
+                                </div>
                             </div>
                         </div>
                         <Link href={`/internal-data?tab=comparison&filter=change&direction=${isMarketUp ? 'up' : 'down'}`}>
@@ -628,7 +634,10 @@ export function MarketSummary() {
                 <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-sm text-foreground">추세 신호</h4>
+                            <div>
+                                <h4 className="font-semibold text-sm text-foreground">추세 신호</h4>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">오늘 기준</p>
+                            </div>
                             <button
                               onClick={() => setTrendSignalDialogOpen(true)}
                               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -636,15 +645,17 @@ export function MarketSummary() {
                               <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex gap-0 mb-3">
-                            <div className="flex-1 text-right pr-2">
-                                <div className="text-xs text-muted-foreground mb-1">골든크로스</div>
-                                <div className="text-2xl font-bold text-orange-600">{summaryData.goldenCrossCount}</div>
-                            </div>
-                            <div className="w-px bg-border" />
-                            <div className="flex-1 text-left pl-2">
-                                <div className="text-xs text-muted-foreground mb-1">데드크로스</div>
-                                <div className="text-2xl font-bold text-blue-600">{summaryData.deadCrossCount}</div>
+                        <div className="mb-2">
+                            <div className="flex gap-0">
+                                <div className="flex-1 text-right pr-2">
+                                    <div className="text-xs text-muted-foreground mb-1">골든크로스</div>
+                                    <div className="text-2xl font-bold text-orange-600">{summaryData.goldenCrossCount}</div>
+                                </div>
+                                <div className="w-px bg-border" />
+                                <div className="flex-1 text-left pl-2">
+                                    <div className="text-xs text-muted-foreground mb-1">데드크로스</div>
+                                    <div className="text-2xl font-bold text-blue-600">{summaryData.deadCrossCount}</div>
+                                </div>
                             </div>
                         </div>
                         <Link href="/internal-data?tab=comparison&filter=ma&crossover=golden">
@@ -660,7 +671,10 @@ export function MarketSummary() {
                 <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-sm text-foreground">RSI 현황</h4>
+                            <div>
+                                <h4 className="font-semibold text-sm text-foreground">RSI 현황</h4>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">오늘 기준</p>
+                            </div>
                             <button
                               onClick={() => setRsiDialogOpen(true)}
                               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -668,15 +682,17 @@ export function MarketSummary() {
                               <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex gap-0 mb-3">
-                            <div className="flex-1 text-right pr-2">
-                                <div className="text-xs text-muted-foreground mb-1">과매수</div>
-                                <div className="text-2xl font-bold text-red-600">{summaryData.overboughtCount}</div>
-                            </div>
-                            <div className="w-px bg-border" />
-                            <div className="flex-1 text-left pl-2">
-                                <div className="text-xs text-muted-foreground mb-1">과매도</div>
-                                <div className="text-2xl font-bold text-blue-600">{summaryData.oversoldCount}</div>
+                        <div className="mb-2">
+                            <div className="flex gap-0">
+                                <div className="flex-1 text-right pr-2">
+                                    <div className="text-xs text-muted-foreground mb-1">과매수</div>
+                                    <div className="text-2xl font-bold text-red-600">{summaryData.overboughtCount}</div>
+                                </div>
+                                <div className="w-px bg-border" />
+                                <div className="flex-1 text-left pl-2">
+                                    <div className="text-xs text-muted-foreground mb-1">과매도</div>
+                                    <div className="text-2xl font-bold text-blue-600">{summaryData.oversoldCount}</div>
+                                </div>
                             </div>
                         </div>
                         <Link href="/internal-data?tab=comparison&filter=rsi&range=oversold">
@@ -692,7 +708,10 @@ export function MarketSummary() {
                 <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-sm text-foreground">거래량 현황</h4>
+                            <div>
+                                <h4 className="font-semibold text-sm text-foreground">거래량 현황</h4>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">오늘 기준</p>
+                            </div>
                             <button
                               onClick={() => setVolumeDialogOpen(true)}
                               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -700,15 +719,17 @@ export function MarketSummary() {
                               <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex gap-0 mb-3">
-                            <div className="flex-1 text-right pr-2">
-                                <div className="text-xs text-muted-foreground mb-1">거래량 과열</div>
-                                <div className="text-2xl font-bold text-red-600">{summaryData.volumeSpikeCount}</div>
-                            </div>
-                            <div className="w-px bg-border" />
-                            <div className="flex-1 text-left pl-2">
-                                <div className="text-xs text-muted-foreground mb-1">거래량 침체</div>
-                                <div className="text-2xl font-bold text-blue-600">{summaryData.volumeDropCount}</div>
+                        <div className="mb-2">
+                            <div className="flex gap-0">
+                                <div className="flex-1 text-right pr-2">
+                                    <div className="text-xs text-muted-foreground mb-1">거래량 과열</div>
+                                    <div className="text-2xl font-bold text-red-600">{summaryData.volumeSpikeCount}</div>
+                                </div>
+                                <div className="w-px bg-border" />
+                                <div className="flex-1 text-left pl-2">
+                                    <div className="text-xs text-muted-foreground mb-1">거래량 침체</div>
+                                    <div className="text-2xl font-bold text-blue-600">{summaryData.volumeDropCount}</div>
+                                </div>
                             </div>
                         </div>
                         <Link href="/internal-data?tab=comparison&filter=volume">
