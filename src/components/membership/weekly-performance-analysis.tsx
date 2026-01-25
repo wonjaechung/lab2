@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -146,7 +148,7 @@ function BundleBuyDialog({
               </div>
             </div>
             <div className="pt-3 border-t">
-              <p className="text-sm text-muted-foreground mb-1">이번주 등락</p>
+              <p className="text-sm text-muted-foreground mb-1">주간변동</p>
               <p className="text-lg font-bold text-green-500">+{avgReturn.toFixed(1)}%</p>
             </div>
           </div>
@@ -226,6 +228,7 @@ function BundleBuyDialog({
 export function WeeklyPerformanceAnalysis() {
   const { tierAverage, myReturn, difference, lossContributors, gainContributors, missingOpportunities } = performanceAnalysisData;
   const [isBundleBuyOpen, setIsBundleBuyOpen] = useState(false);
+  const [showLossMakers, setShowLossMakers] = useState(false);
 
   return (
     <Card className="w-full">
@@ -233,232 +236,251 @@ export function WeeklyPerformanceAnalysis() {
         <div className="space-y-6">
           {/* 포커스 섹션 - 즉시 액션 */}
           <div className="space-y-6 pt-4">
-            <div>
-              <h3 className="text-lg font-bold mb-1">
-                이번 주 수익률을 낮춘 코인
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                수익률을 크게 낮추고 있는 코인들입니다. 보유 비중 조정을 검토해보세요.
-              </p>
-              
-              <div className="grid md:grid-cols-3 gap-4">
-                {lossContributors.map((coin, index) => (
-                  <div
-                    key={coin.ticker}
-                    className={cn(
-                      'relative p-5 rounded-xl border-2 transition-all hover:shadow-lg',
-                      index === 0
-                        ? 'border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-500/5'
-                        : 'border-red-500/20 bg-red-500/5'
-                    )}
-                  >
-
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 ring-2 ring-red-500/20">
-                          <AvatarImage src={coin.img} />
-                          <AvatarFallback>{coin.ticker}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-bold text-base">{coin.name}</p>
-                          <p className="text-xs text-muted-foreground">{coin.ticker}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-red-500">
-                          {coin.myReturn > 0 ? '+' : ''}{coin.myReturn}%
-                        </p>
-                        <p className="text-xs text-muted-foreground">이번 주 등락</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="pt-2 border-t border-red-500/10">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className="text-[10px] text-muted-foreground w-16 text-left">내 수익률:</span>
-                              <div className="flex-1 h-2 bg-red-500/20 rounded-full overflow-hidden max-w-[120px]">
-                                <div 
-                                  className="h-full bg-red-500 rounded-full"
-                                  style={{ width: `${Math.min(Math.max((coin.myReturn + 20) / 40 * 100, 0), 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-semibold text-red-500 w-12 text-right">{coin.myReturn > 0 ? '+' : ''}{coin.myReturn}%</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-16 text-left">평균 수익률:</span>
-                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
-                                <div 
-                                  className="h-full bg-muted-foreground/30 rounded-full"
-                                  style={{ width: `${Math.min(Math.max((coin.tierAverage + 20) / 40 * 100, 0), 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-semibold text-muted-foreground w-12 text-right">{coin.tierAverage > 0 ? '+' : ''}{coin.tierAverage}%</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex-shrink-0 text-right w-24">
-                            수익률 차이: <span className="font-semibold text-red-500">{coin.difference > 0 ? '+' : ''}{coin.difference.toFixed(1)}%p</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t border-red-500/10">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className="text-[10px] text-muted-foreground w-16 text-left">나의 비중:</span>
-                              <div className="flex-1 h-2 bg-red-500/20 rounded-full overflow-hidden max-w-[120px]">
-                                <div 
-                                  className="h-full bg-red-500 rounded-full"
-                                  style={{ width: `${Math.min((coin.myWeight / 50) * 100, 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-semibold text-red-500 w-12 text-right">{coin.myWeight}%</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-16 text-left">평균 비중:</span>
-                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
-                                <div 
-                                  className="h-full bg-muted-foreground/30 rounded-full"
-                                  style={{ width: `${Math.min((coin.tierWeight / 50) * 100, 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-semibold text-muted-foreground w-12 text-right">{coin.tierWeight}%</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex-shrink-0 text-right w-24">
-                            평균보다 <span className="font-semibold text-red-500">{(coin.myWeight / coin.tierWeight).toFixed(1)}배</span> 많이 보유 중
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="w-full"
-                      onClick={() => console.log('Trade:', coin.ticker)}
-                    >
-                      {coin.ticker} 거래하기
-                    </Button>
+            
+            {showLossMakers ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold mb-1">
+                      이번 주 수익률을 낮춘 코인
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      수익률을 크게 낮추고 있는 코인들입니다. 보유 비중 조정을 검토해보세요.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold mb-1">
-                    이번 주 놓친 기회
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    같은 등급 고객들이 보유하는 주간 상승률이 높은 코인들입니다.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="view-mode" className="text-sm text-muted-foreground cursor-pointer">
+                      수익률 낮춘 코인 보기
+                    </Label>
+                    <Switch
+                      id="view-mode"
+                      checked={showLossMakers}
+                      onCheckedChange={setShowLossMakers}
+                    />
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-8"
-                  onClick={() => setIsBundleBuyOpen(true)}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  묶음매수
-                </Button>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  {lossContributors.map((coin, index) => (
+                    <div
+                      key={coin.ticker}
+                      className={cn(
+                        'relative p-5 rounded-xl border-2 transition-all hover:shadow-lg',
+                        index === 0
+                          ? 'border-red-500/40 bg-gradient-to-br from-red-500/10 to-red-500/5'
+                          : 'border-red-500/20 bg-red-500/5'
+                      )}
+                    >
+
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12 ring-2 ring-red-500/20">
+                            <AvatarImage src={coin.img} />
+                            <AvatarFallback>{coin.ticker}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-bold text-base">{coin.name}</p>
+                            <p className="text-xs text-muted-foreground">{coin.ticker}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-red-500">
+                            {coin.myReturn > 0 ? '+' : ''}{coin.myReturn}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">주간변동</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="pt-2 border-t border-red-500/10">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground min-w-[140px] text-left shrink-0">내 수익률:</span>
+                              <div className="flex-1 h-2 bg-red-500/20 rounded-full overflow-hidden max-w-[120px]">
+                                <div 
+                                  className="h-full bg-red-500 rounded-full"
+                                  style={{ width: `${Math.min(Math.abs(coin.myReturn) / 50 * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-semibold text-red-500 w-12 text-right shrink-0">{coin.myReturn > 0 ? '+' : ''}{coin.myReturn}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground min-w-[140px] text-left shrink-0 whitespace-nowrap">동일 멤버십 수익률:</span>
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
+                                <div 
+                                  className="h-full bg-muted-foreground/30 rounded-full"
+                                  style={{ width: `${Math.min(Math.abs(coin.tierAverage) / 50 * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-semibold text-muted-foreground w-12 text-right shrink-0">{coin.tierAverage > 0 ? '+' : ''}{coin.tierAverage}%</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t border-red-500/10">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground min-w-[140px] text-left shrink-0">나의 비중:</span>
+                              <div className="flex-1 h-2 bg-red-500/20 rounded-full overflow-hidden max-w-[120px]">
+                                <div 
+                                  className="h-full bg-red-500 rounded-full"
+                                  style={{ width: `${Math.min(coin.myWeight, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-semibold text-red-500 w-12 text-right shrink-0">{coin.myWeight}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground min-w-[140px] text-left shrink-0 whitespace-nowrap">동일 멤버십 비중:</span>
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[120px]">
+                                <div 
+                                  className="h-full bg-muted-foreground/30 rounded-full"
+                                  style={{ width: `${Math.min(coin.tierWeight, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-semibold text-muted-foreground w-12 text-right shrink-0">{coin.tierWeight}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => console.log('Trade:', coin.ticker)}
+                      >
+                        {coin.ticker} 거래하기
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              <div className="grid md:grid-cols-3 gap-4">
-                {missingOpportunities.map((coin, index) => (
-                  <div
-                    key={coin.ticker}
-                    className={cn(
-                      'relative p-5 rounded-xl border-2 transition-all hover:shadow-lg',
-                      index === 0
-                        ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-orange-500/5'
-                        : 'border-orange-500/20 bg-orange-500/5'
-                    )}
-                  >
-                    {index === 0 && (
-                      <Badge className="absolute -top-2 -right-2 bg-orange-500">
-                        최고 수익률
-                      </Badge>
-                    )}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 ring-2 ring-orange-500/20">
-                          <AvatarImage src={coin.img} />
-                          <AvatarFallback>{coin.ticker}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-bold text-base">{coin.name}</p>
-                          <p className="text-xs text-muted-foreground">{coin.ticker}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-green-500">
-                          +{coin.tierAverageReturn}%
-                        </p>
-                        <p className="text-xs text-muted-foreground">이번주 등락</p>
-                      </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold mb-1">
+                      이번 주 놓친 기회
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      같은 등급 고객들이 보유하는 주간 상승률이 높은 코인들입니다.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="view-mode" className="text-sm text-muted-foreground cursor-pointer">
+                        수익률 낮춘 코인 보기
+                      </Label>
+                      <Switch
+                        id="view-mode"
+                        checked={showLossMakers}
+                        onCheckedChange={setShowLossMakers}
+                      />
                     </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">등급 평균 보유</span>
-                        <span className="font-semibold">{coin.tierWeight}%</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">내 보유</span>
-                        <span className="font-semibold text-muted-foreground">{coin.myWeight}%</span>
-                      </div>
-                      <div className="pt-2 border-t border-orange-500/10 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">이번주 매수평균가</span>
-                          <span className="font-semibold">
-                            {coin.weeklyAvgPrice >= 1000 
-                              ? `${coin.weeklyAvgPrice.toLocaleString('ko-KR')}원`
-                              : coin.weeklyAvgPrice >= 1
-                              ? `${coin.weeklyAvgPrice.toFixed(2)}원`
-                              : `${coin.weeklyAvgPrice.toFixed(4)}원`
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">현재가</span>
-                          <span className="font-semibold text-foreground">
-                            {coin.currentPrice >= 1000 
-                              ? `${coin.currentPrice.toLocaleString('ko-KR')}원`
-                              : coin.currentPrice >= 1
-                              ? `${coin.currentPrice.toFixed(2)}원`
-                              : `${coin.currentPrice.toFixed(4)}원`
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs pt-1">
-                          <span className="text-muted-foreground">현재가 대비</span>
-                          <span className={cn(
-                            'font-semibold',
-                            coin.currentPrice > coin.weeklyAvgPrice ? 'text-green-500' : 'text-red-500'
-                          )}>
-                            {coin.currentPrice > coin.weeklyAvgPrice ? '+' : ''}
-                            {((coin.currentPrice - coin.weeklyAvgPrice) / coin.weeklyAvgPrice * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <Button
                       size="sm"
                       variant="default"
-                      className="w-full"
-                      onClick={() => console.log('Trade:', coin.ticker)}
+                      className="h-8"
+                      onClick={() => setIsBundleBuyOpen(true)}
                     >
-                      {coin.ticker} 거래하기
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      묶음매수
                     </Button>
                   </div>
-                ))}
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  {missingOpportunities.map((coin, index) => (
+                    <div
+                      key={coin.ticker}
+                      className={cn(
+                        'relative p-5 rounded-xl border-2 transition-all hover:shadow-lg',
+                        index === 0
+                          ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-orange-500/5'
+                          : 'border-orange-500/20 bg-orange-500/5'
+                      )}
+                    >
+                      {index === 0 && (
+                        <Badge className="absolute -top-2 -right-2 bg-orange-500">
+                          최고 수익률
+                        </Badge>
+                      )}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12 ring-2 ring-orange-500/20">
+                            <AvatarImage src={coin.img} />
+                            <AvatarFallback>{coin.ticker}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-bold text-base">{coin.name}</p>
+                            <p className="text-xs text-muted-foreground">{coin.ticker}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-500">
+                            +{coin.tierAverageReturn}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">주간변동</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">등급 평균 보유</span>
+                          <span className="font-semibold">{coin.tierWeight}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">내 보유</span>
+                          <span className="font-semibold text-muted-foreground">{coin.myWeight}%</span>
+                        </div>
+                        <div className="pt-2 border-t border-orange-500/10 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">이번주 매수평균가</span>
+                            <span className="font-semibold">
+                              {coin.weeklyAvgPrice >= 1000 
+                                ? `${coin.weeklyAvgPrice.toLocaleString('ko-KR')}원`
+                                : coin.weeklyAvgPrice >= 1
+                                ? `${coin.weeklyAvgPrice.toFixed(2)}원`
+                                : `${coin.weeklyAvgPrice.toFixed(4)}원`
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">현재가</span>
+                            <span className="font-semibold text-foreground">
+                              {coin.currentPrice >= 1000 
+                                ? `${coin.currentPrice.toLocaleString('ko-KR')}원`
+                                : coin.currentPrice >= 1
+                                ? `${coin.currentPrice.toFixed(2)}원`
+                                : `${coin.currentPrice.toFixed(4)}원`
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs pt-1">
+                            <span className="text-muted-foreground">이번주 매수평균가 대비</span>
+                            <span className={cn(
+                              'font-semibold',
+                              coin.currentPrice > coin.weeklyAvgPrice ? 'text-green-500' : 'text-red-500'
+                            )}>
+                              {coin.currentPrice > coin.weeklyAvgPrice ? '+' : ''}
+                              {((coin.currentPrice - coin.weeklyAvgPrice) / coin.weeklyAvgPrice * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="w-full"
+                        onClick={() => console.log('Trade:', coin.ticker)}
+                      >
+                        {coin.ticker} 거래하기
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </CardContent>
