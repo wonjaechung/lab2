@@ -313,16 +313,16 @@ export function CorporateTreasuryTracker() {
   }
 
   return (
-    <div className="w-full max-w-full overflow-hidden">
-        <div className="flex flex-col gap-4 mb-6">
-            <div className="flex flex-col space-y-1.5">
-                <h2 className="text-lg font-semibold text-foreground">기업들은 지금, 얼마나 보유하고 있을까?</h2>
-                <p className="text-muted-foreground">
-                    주요 상장 기업들의 가상자산 보유 현황을 통해 시장의 큰 흐름을 읽어보세요.
-                </p>
-            </div>
-             <div className="flex justify-end items-center">
-                 <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
+    <Card className="border-none shadow-none bg-transparent w-full max-w-full overflow-hidden">
+        <CardHeader className="px-0 pt-0 pb-4">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-foreground">기업 보유 현황</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        주요 상장 기업들의 가상자산 보유 현황을 실시간으로 추적합니다
+                    </p>
+                </div>
+                <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
                     {(['1M', '1Y', 'All'] as Timeframe[]).map((tf) => (
                         <Button
                         key={tf}
@@ -340,7 +340,9 @@ export function CorporateTreasuryTracker() {
             <div className="w-full overflow-x-auto scrollbar-hide pb-1">
                 {renderTopLegend()}
             </div>
-        </div>
+        </CardHeader>
+        
+        <CardContent className="p-0">
         
         <div className="h-72 w-full mb-6">
             {chartData ? (
@@ -359,6 +361,7 @@ export function CorporateTreasuryTracker() {
         <div className="min-h-[200px]">
             <ListView activeAsset={activeAsset.toLowerCase()} />
         </div>
-    </div>
+        </CardContent>
+    </Card>
   );
 }

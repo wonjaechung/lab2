@@ -677,9 +677,9 @@ export function WhaleTrades() {
         <div className="pt-8 border-t">
             <h2 className="text-lg font-semibold text-foreground mb-6">주요 기술적 지표</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <RvolList title="주간 거래 활성도" icon={BarChart} data={whaleData.topRvol} />
-                <VolatilitySignalList title="일간 변동폭" icon={Percent} data={whaleData.topVolatility} description="당일 저가 대비 고가의 차이를 나타냅니다." />
-                <BetaStyleList title="비트코인 대비 움직임" icon={Shield} data={whaleData.beta} description="비트코인 등락 대비 해당 종목의 민감도를 나타냅니다." />
+                <RvolList title="거래 활성도 Top 5" icon={BarChart} data={whaleData.topRvol} />
+                <VolatilitySignalList title="변동폭 Top 5" icon={Percent} data={whaleData.topVolatility} description="당일 저가 대비 고가의 변동폭이 큰 종목입니다." />
+                <BetaStyleList title="비트코인 대비 움직임 Top 5" icon={Shield} data={whaleData.beta} description="비트코인 등락 대비 해당 종목의 민감도를 나타냅니다." />
             </div>
         </div>
     </div>

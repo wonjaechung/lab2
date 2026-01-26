@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import {
@@ -15,8 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { BarChartBig, Zap } from 'lucide-react';
+import { BarChartBig, Zap, TrendingUp, TrendingDown, AlertCircle, Lock, ArrowRight, DollarSign, Building2 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -326,13 +327,39 @@ export function EtfFlowTracker() {
   const [chartData, setChartData] = useState<any[] | null>(null);
 
   useEffect(() => {
-    setChartData(null); // Set to null to show skeleton
+    setChartData(null);
     const timer = setTimeout(() => {
         setChartData(generateChartData(timeframe));
-    }, 300); // Simulate network delay
+    }, 300);
     return () => clearTimeout(timer);
   }, [timeframe]);
 
+  // 스마트 머니 시그널 계산
+  const smartMoneySignal = useMemo(() => {
+    if (!chartData) return null;
+    
+    const isFlowView = timeframe === '1W' || timeframe === '1M';
+    const totalFlows = chartAssets.reduce((acc, asset) => {
+        if (isFlowView) {
+           acc[asset] = chartData.reduce((sum, item) => sum + (item[asset as keyof typeof item] as number), 0);
+        } else {
+           const lastItem = chartData[chartData.length - 1];
+           acc[asset] = lastItem ? (lastItem[asset as keyof typeof lastItem] as number) : 0;
+        }
+        return acc;
+    }, {} as {[key: string]: number});
+
+    const totalFlow = Object.values(totalFlows).reduce((sum, val) => sum + val, 0);
+    const positiveCount = Object.values(totalFlows).filter(v => v > 0).length;
+    const isBullish = totalFlow > 0 && positiveCount >= 2;
+    
+    return {
+      totalFlow,
+      isBullish,
+      positiveCount,
+      flows: totalFlows,
+    };
+  }, [chartData, timeframe]);
 
   const renderTopLegend = () => {
       if (!chartData) {
@@ -388,60 +415,62 @@ export function EtfFlowTracker() {
   }
 
   return (
-    <Card className="border-none shadow-none bg-transparent w-full max-w-full overflow-hidden">
+    <div className="w-full max-w-full space-y-6">
+      {/* ETF 자금 흐름 섹션 */}
+      <Card className="border-none shadow-none bg-transparent">
         <CardHeader className="px-0 pt-0 pb-4">
-            <div className="flex flex-col gap-4">
-                <div className="flex flex-col space-y-1.5">
-                    <h1 className="text-lg font-semibold text-foreground">기관들은 지금, 사고 있을까 팔고 있을까?</h1>
-                    <p className="text-muted-foreground">
-                        주요 현물 ETF의 자금 흐름을 통해 기관 투자자들의 움직임을 파악하고, 시장의 다음 방향을 예측해보세요.
-                    </p>
-                </div>
-                 <div className="flex justify-end items-center">
-                     <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
-                        {(['1W', '1M', '1Y', 'All'] as Timeframe[]).map((tf) => (
-                            <Button
-                            key={tf}
-                            size="sm"
-                            variant={timeframe === tf ? 'secondary' : 'ghost'}
-                            onClick={() => setTimeframe(tf)}
-                            className="h-7 px-3 text-xs rounded-sm"
-                            >
-                            {tf}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-                
-                <div className="w-full overflow-x-auto scrollbar-hide pb-1">
-                    {renderTopLegend()}
-                </div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                ETF 자금 흐름
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                주요 현물 ETF의 실시간 자금 흐름을 추적합니다
+              </p>
             </div>
+            <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
+              {(['1W', '1M', '1Y', 'All'] as Timeframe[]).map((tf) => (
+                <Button
+                  key={tf}
+                  size="sm"
+                  variant={timeframe === tf ? 'secondary' : 'ghost'}
+                  onClick={() => setTimeframe(tf)}
+                  className="h-7 px-3 text-xs rounded-sm"
+                >
+                  {tf}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="w-full overflow-x-auto scrollbar-hide pb-1">
+            {renderTopLegend()}
+          </div>
         </CardHeader>
         
         <CardContent className="p-0">
-            <div className="h-72 w-full mb-6">
-                {chartData ? (
-                    <ChartView 
-                        timeframe={timeframe} 
-                        activeAssets={[activeAsset]} 
-                        chartData={chartData}
-                    />
-                ) : (
-                    <Skeleton className="h-full w-full" />
-                )}
-            </div>
+          <div className="h-72 w-full mb-6">
+            {chartData ? (
+              <ChartView 
+                timeframe={timeframe} 
+                activeAssets={[activeAsset]} 
+                chartData={chartData}
+              />
+            ) : (
+              <Skeleton className="h-full w-full" />
+            )}
+          </div>
 
-            <div className="h-px w-full bg-border/50 mb-4"></div>
-            
-            <div className="min-h-[200px]">
-                <ListView activeAsset={activeAsset.toLowerCase()} />
-            </div>
-
-            <div className="h-px w-full bg-border/50 my-8"></div>
-            
-            <CorporateTreasuryTracker />
+          <div className="h-px w-full bg-border/50 mb-4"></div>
+          
+          <div className="min-h-[200px]">
+            <ListView activeAsset={activeAsset.toLowerCase()} />
+          </div>
         </CardContent>
-    </Card>
+      </Card>
+
+      {/* 기업 보유 현황 섹션 */}
+      <CorporateTreasuryTracker />
+    </div>
   );
 }

@@ -19,9 +19,9 @@ import RealtimeAlerts from '@/components/internal-data/sniper-feed';
 
 const navigationItems = [
   { name: '거래소 현황', value: 'status', href: '#', hidden: false },
-  { name: '가상자산 비교', value: 'comparison', href: '#', hidden: false },
-  { name: '기술적분석', value: 'analysis', href: '#', hidden: true },
   { name: '실시간 알림', value: 'sniper', href: '#', hidden: false },
+  { name: '가상자산 검색', value: 'comparison', href: '#', hidden: false },
+  { name: '기술적분석', value: 'analysis', href: '#', hidden: true },
 ];
 
 function InternalDataSidebar({
