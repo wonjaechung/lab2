@@ -29,6 +29,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { CoinFinder } from '@/components/dashboard/coin-finder';
 
 const assetsData = [
   { rank: 1, name: '비트코인', ticker: 'BTC', today: 5.12, week: 12.5, month: 23.9, marketCap: '1,382조', circulatingSupply: '19,713,934 BTC', supplyRatio: 93.8, img: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=032', marketCapDominance: '52.5%', athPrice: '101,348,000원', athDate: '2024년 3월 14일'},
@@ -372,6 +373,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
 
   // Filter state
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
+  const [coinFinderFilter, setCoinFinderFilter] = useState<string | null>(null);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [selectedFilterMenu, setSelectedFilterMenu] = useState<string>('mcap');
   const [tempFilterValues, setTempFilterValues] = useState<Record<string, string | string[] | number[] | number[][]>>({});
@@ -744,6 +746,72 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
   };
 
   // Filter assets
+  // CoinFinder 필터를 AssetComparisonTable 필터로 변환
+  const coinFinderFilters = useMemo(() => {
+    if (!coinFinderFilter) return [];
+    
+    const filters: Filter[] = [];
+    
+    switch (coinFinderFilter) {
+      case 'shield': // 튼튼한 대장주 - 시가총액 상위
+        filters.push({
+          id: 'coinfinder-shield',
+          type: 'mcap',
+          label: '시가총액',
+          value: '시가총액 상위 1-10위',
+          rawValue: [1, 10]
+        });
+        break;
+      case 'lowcap': // 가벼운 소형주 - 시가총액 하위
+        filters.push({
+          id: 'coinfinder-lowcap',
+          type: 'mcap',
+          label: '시가총액',
+          value: '시가총액 하위 50위 이후',
+          rawValue: [50, 10000]
+        });
+        break;
+      case 'decoupling': // 청개구리 - 베타 반대 방향
+        filters.push({
+          id: 'coinfinder-decoupling',
+          type: 'beta',
+          label: '베타',
+          value: '비트코인과 반대 방향으로 1.0배 이상 움직이는 종목',
+          rawValue: { direction: 'opposite', multiplier: 1.0 }
+        });
+        break;
+      case 'trend': // 거래량 폭발 - 거래량 높음
+        filters.push({
+          id: 'coinfinder-trend',
+          type: 'volume',
+          label: '상대 거래량',
+          value: '거래량 급등 (한달 일평균 대비 1.5배 이상)',
+          rawValue: { type: 'volume', rvol: 1.5, direction: 'above', spike: true }
+        });
+        break;
+      case 'dip': // 과매도 줍줍 - RSI 과매도
+        filters.push({
+          id: 'coinfinder-dip',
+          type: 'rsi',
+          label: '과매수/과매도',
+          value: 'RSI 30 이하 (과매도)',
+          rawValue: { type: 'rsi', overbought: false, oversold: true, timeframe: '1d' }
+        });
+        break;
+      case 'volatility': // 화끈한 변동성 - 변동성 높음
+        filters.push({
+          id: 'coinfinder-volatility',
+          type: 'volatility',
+          label: '일간 변동폭',
+          value: '일간 변동폭 10% 이상',
+          rawValue: { threshold: 10 }
+        });
+        break;
+    }
+    
+    return filters;
+  }, [coinFinderFilter]);
+
   const filteredAssets = useMemo(() => {
     let assets = [...convertedAssets];
     
@@ -752,12 +820,15 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
       return assets.filter(asset => asset.ticker === searchedAsset.ticker);
     }
 
-    if (activeFilters.length === 0) {
+    // CoinFinder 필터와 일반 필터 합치기
+    const allFilters = [...coinFinderFilters, ...activeFilters];
+
+    if (allFilters.length === 0) {
       return assets;
     }
 
     return assets.filter(asset => {
-      return activeFilters.every(filter => {
+      return allFilters.every(filter => {
         if (filter.type === 'mcap' && filter.rawValue && Array.isArray(filter.rawValue)) {
           // 여러개 선택된 경우 (배열의 배열)
           if (filter.rawValue.length > 0 && Array.isArray(filter.rawValue[0])) {
@@ -865,11 +936,35 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
           // 임시로 모든 asset 통과 (실제 데이터 연동 시 위 주석 해제)
           return true;
         }
+        // RSI 필터 처리
+        if (filter.type === 'rsi' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const rsiFilter = filter.rawValue as { range?: string };
+          // TODO: 실제 RSI 데이터와 연동 필요
+          // asset에 rsi 속성이 있다고 가정
+          // const assetRsi = (asset as any).rsi || 50;
+          // if (rsiFilter.range === 'oversold') {
+          //   return assetRsi <= 30;
+          // } else if (rsiFilter.range === 'overbought') {
+          //   return assetRsi >= 70;
+          // }
+          // 임시로 모든 asset 통과
+          return true;
+        }
+        // Volume 필터 처리
+        if (filter.type === 'volume' && filter.rawValue && typeof filter.rawValue === 'object' && !Array.isArray(filter.rawValue)) {
+          const volumeFilter = filter.rawValue as { multiplier?: number };
+          // TODO: 실제 거래량 데이터와 연동 필요
+          // asset에 volumeMultiplier 속성이 있다고 가정
+          // const assetVolumeMultiplier = (asset as any).volumeMultiplier || 1.0;
+          // return assetVolumeMultiplier >= (volumeFilter.multiplier || 1.0);
+          // 임시로 모든 asset 통과
+          return true;
+        }
         // Other filters can be added here
         return true;
       });
     });
-  }, [activeFilters, convertedAssets, searchedAsset]);
+  }, [activeFilters, coinFinderFilters, convertedAssets, searchedAsset]);
 
   const sortedAssets = useMemo(() => {
     let sortableItems = [...filteredAssets];
@@ -1048,7 +1143,12 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
   };
 
   const handleRemoveFilter = (filterId: string) => {
-    setActiveFilters(activeFilters.filter(f => f.id !== filterId));
+    // CoinFinder 필터인 경우 coinFinderFilter 상태 초기화
+    if (filterId.startsWith('coinfinder-')) {
+      setCoinFinderFilter(null);
+    } else {
+      setActiveFilters(activeFilters.filter(f => f.id !== filterId));
+    }
   };
 
   const handleResetFilters = () => {
@@ -1117,7 +1217,7 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
         
         {/* Filter Add Bar */}
         <div className="pb-4 border-b mb-4">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2 justify-between">
             {/* 검색 - 필터 추가 왼쪽 */}
             <div className="flex items-center gap-2">
               {searchedAsset && (
@@ -1197,27 +1297,25 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
                   </div>
                 </PopoverContent>
               </Popover>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-            <Dialog open={filterDialogOpen} onOpenChange={(open) => {
-            setFilterDialogOpen(open);
-            if (open) {
-              // Dialog가 열릴 때 선택 상태 초기화
-              setRsiSelected(null);
-              setMaSelected(null);
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-sm"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                필터 추가
-              </Button>
-            </DialogTrigger>
+              
+              <Dialog open={filterDialogOpen} onOpenChange={(open) => {
+                setFilterDialogOpen(open);
+                if (open) {
+                  // Dialog가 열릴 때 선택 상태 초기화
+                  setRsiSelected(null);
+                  setMaSelected(null);
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-sm"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    필터 추가
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="max-w-3xl w-[90vw] max-h-[85vh] flex flex-col p-0">
               <DialogHeader className="px-6 pt-6 pb-4 border-b">
                 <DialogTitle>필터 추가</DialogTitle>
@@ -2617,12 +2715,17 @@ export function AssetComparisonTable({ initialAssets = defaultAssets, hideDeepDi
             </DialogContent>
           </Dialog>
             </div>
+            
+            {/* 나에게 딱 맞는 코인 찾기 배너 - 오른쪽 */}
+            <div className="hidden lg:block">
+              <CoinFinder variant="compact" onFilterChange={setCoinFinderFilter} />
+            </div>
           </div>
           
           {/* 필터 목록 - 필터 추가 버튼 아래 */}
-          {activeFilters.length > 0 && (
+          {(activeFilters.length > 0 || coinFinderFilters.length > 0) && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              {activeFilters.map((filter) => {
+              {[...coinFinderFilters, ...activeFilters].map((filter) => {
                 const isChangeFilter = filter.type === 'change';
             const isMaFilter = filter.type === 'ma';
             const isRsiFilter = filter.type === 'rsi';

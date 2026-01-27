@@ -296,7 +296,7 @@ export function TotalAssetsChart() {
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-lg font-semibold text-foreground">시장 위치는 어디에 있을까?</CardTitle>
+                <CardTitle className="text-lg font-semibold text-foreground">지금 시장 심리는 어떨까?</CardTitle>
                 <CardDescription>
                   공포탐욕지수로 시장 심리를 확인하고, 알트코인 시즌 지수와 주요 자산의 도미넌스를 통해 시장을 파악해보세요.
                 </CardDescription>

@@ -50,7 +50,7 @@ const generateAllPortfolios = () => {
     { nickname: '암호화폐전문가', roi: 28.5, totalAssets: 68000000 },
     { nickname: '디파이킹', roi: 25.3, totalAssets: 55000000 },
     { nickname: '블록체인마스터', roi: 22.1, totalAssets: 48000000 },
-    { nickname: '나', roi: 8.7, totalAssets: 35000000, isMe: true }, // 내 포트폴리오
+    { nickname: '나', roi: 35, totalAssets: 35000000, isMe: true }, // 내 포트폴리오
     { nickname: '초보투자자', roi: 5.2, totalAssets: 28000000 },
     { nickname: '안정추구', roi: 3.1, totalAssets: 22000000 },
     { nickname: '장기투자', roi: 1.8, totalAssets: 18000000 },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -22,8 +22,70 @@ import { Label } from '@/components/ui/label';
 import { CheckCircle2, Users, Sparkles, MessageSquare, ArrowUpRight } from 'lucide-react';
 import { GradeTopPortfolios } from './grade-top-portfolios';
 
+// 등급 내 수익률 분포 데이터 (membership-asset-distribution.tsx와 동일)
+const distributionData = [
+    { range: '< -30%', holders: 8.5 },
+    { range: '-30% ~ -20%', holders: 12.3 },
+    { range: '-20% ~ -10%', holders: 18.9 },
+    { range: '-10% ~ -5%', holders: 25.1 },
+    { range: '-5% ~ 0%', holders: 30.7 },
+    { range: '0% ~ 5%', holders: 28.4 },
+    { range: '5% ~ 10%', holders: 22.6 },
+    { range: '10% ~ 20%', holders: 15.8 },
+    { range: '20% ~ 30%', holders: 9.2 },
+    { range: '> 30%', holders: 5.5 },
+];
+
+// 사용자 포트폴리오 데이터 (membership-asset-distribution.tsx와 동일)
+const myPortfolio = {
+    pnlPercent: 35.0,
+};
+
 export function MyRoiRanking() {
-  const userRank = 5;
+  // 등급 내 수익률 분포와 동일한 계산 로직 사용
+  const userRank = useMemo(() => {
+    let cumulativePercent = 0;
+    let positionIndex = -1;
+    const pnl = myPortfolio.pnlPercent;
+
+    // 정방향으로 순회하면서 위치 찾기
+    for(let i=0; i<distributionData.length; i++) {
+        const range = distributionData[i].range;
+        let isInRange = false;
+
+        if (range.startsWith('>')) {
+            const threshold = parseFloat(range.replace('>', '').replace('%', '').trim());
+            isInRange = pnl > threshold;
+        } else if (range.startsWith('<')) {
+            const threshold = parseFloat(range.replace('<', '').replace('%', '').trim());
+            isInRange = pnl < threshold;
+        } else if (range.includes('~')) {
+            const parts = range.split('~');
+            const min = parseFloat(parts[0].replace(/[^0-9.-]/g, ''));
+            const max = parseFloat(parts[1].replace(/[^0-9.-]/g, ''));
+            isInRange = pnl >= min && pnl < max;
+        }
+
+        if (isInRange) {
+            positionIndex = i;
+            break;
+        }
+    }
+
+    // 상위 순위 계산 (위에서부터 누적)
+    const reversedData = [...distributionData].reverse();
+    for(let i=0; i<reversedData.length; i++) {
+        const idx = distributionData.length - 1 - i;
+        if (idx > positionIndex) {
+            cumulativePercent += reversedData[i].holders;
+        } else if (idx === positionIndex) {
+            cumulativePercent += reversedData[i].holders / 2;
+            break;
+        }
+    }
+
+    return Math.round(cumulativePercent);
+  }, []);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isPortfolioViewOpen, setIsPortfolioViewOpen] = useState(false);
   const [isCommunityDialogOpen, setIsCommunityDialogOpen] = useState(false);

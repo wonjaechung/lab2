@@ -3,10 +3,13 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Label, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Label, CartesianGrid, LabelList } from 'recharts';
 import { User, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// 전체 멤버십 수 (예시 값, 실제 데이터로 교체 필요)
+const TOTAL_MEMBERS = 10000;
 
 const distributionData = [
     { range: '< -30%', holders: 8.5 },
@@ -22,7 +25,7 @@ const distributionData = [
 ];
 
 const myPortfolio = {
-    pnlPercent: 8.7,
+    pnlPercent: 35.0,
     topGainers: [
         { ticker: 'WLD', name: '월드코인', pnl: 45.2, img: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.svg?v=032' },
         { ticker: 'STX', name: '스택스', pnl: 32.1, img: 'https://cryptologos.cc/logos/stacks-stx-logo.svg?v=032' },
@@ -63,7 +66,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 
 export function MembershipAssetDistribution() {
-    const { myPositionIndex, myRankPercent } = useMemo(() => {
+    const { myPositionIndex, myRankPercent, chartData } = useMemo(() => {
         let cumulativePercent = 0;
         let positionIndex = -1;
         const pnl = myPortfolio.pnlPercent;
@@ -106,7 +109,13 @@ export function MembershipAssetDistribution() {
 
         const rankPercent = Math.round(cumulativePercent);
 
-        return { myPositionIndex: positionIndex, myRankPercent: rankPercent };
+        // 차트 데이터에 라벨 추가
+        const chartDataWithLabel = distributionData.map((entry, index) => ({
+            ...entry,
+            label: index === positionIndex ? '내!' : ''
+        }));
+
+        return { myPositionIndex: positionIndex, myRankPercent: rankPercent, chartData: chartDataWithLabel };
     }, [myPortfolio.pnlPercent]);
 
     const AssetList = ({ title, assets, type }: { title: string, assets: any[], type: 'gainer' | 'loser' }) => (
@@ -147,32 +156,74 @@ export function MembershipAssetDistribution() {
                 {/* 차트 */}
                 <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={distributionData} layout="vertical" margin={{ left: 10, top: 10, bottom: 10, right: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
-                            <XAxis type="number" hide />
-                            <YAxis 
+                        <BarChart 
+                            data={chartData} 
+                            margin={{ left: 10, top: 10, bottom: 10, right: 20 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
+                            <XAxis 
                                 dataKey="range" 
-                                type="category" 
-                                width={95} 
+                                type="category"
                                 tick={{ fontSize: 10 }} 
                                 tickLine={false}
                                 axisLine={false}
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                            />
+                            <YAxis 
+                                type="number"
+                                domain={[0, 30]}
+                                hide
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--accent)/0.1)' }} />
-                            <Bar dataKey="holders" radius={[0, 4, 4, 0]} barSize={22}>
-                                {distributionData.map((entry, index) => {
+                            <Bar dataKey="holders" radius={[4, 4, 0, 0]} barSize={22}>
+                                {chartData.map((entry, index) => {
                                     const pnl = parseFloat(entry.range.split('~')[0].replace(/[^0-9.-]/g, ''));
-                                    // 더 부드러운 그라데이션 색상
-                                    const color = pnl >= 0 
-                                        ? index < 5 ? '#86efac' : index < 7 ? '#4ade80' : '#22c55e'
-                                        : index > 5 ? '#fca5a5' : index > 3 ? '#fb7185' : '#ef4444';
+                                    const isMyPosition = index === myPositionIndex;
+                                    // 사용자 위치 바는 오렌지 색상 사용
+                                    const color = isMyPosition
+                                        ? '#fb923c' // 오렌지 색상
+                                        : pnl >= 0 
+                                            ? index < 5 ? '#86efac' : index < 7 ? '#4ade80' : '#22c55e'
+                                            : index > 5 ? '#fca5a5' : index > 3 ? '#fb7185' : '#ef4444';
                                     
                                     return <Cell key={`cell-${index}`} fill={color} />;
                                 })}
+                                <LabelList 
+                                    dataKey="holders"
+                                    position="top"
+                                    fill="hsl(var(--muted-foreground))"
+                                    fontSize={10}
+                                    fontWeight="medium"
+                                    formatter={(value: number) => {
+                                        const count = Math.round((value / 100) * TOTAL_MEMBERS);
+                                        return `${count.toLocaleString()}명`;
+                                    }}
+                                />
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
+                
+                {/* 사용자 위치 정보 - 하단 */}
+                {myPositionIndex >= 0 && (
+                    <div className="mt-0 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-center gap-4">
+                            <div>
+                                <p className="text-xs text-muted-foreground">내 수익률</p>
+                                <p className={cn("text-sm font-bold", myPortfolio.pnlPercent >= 0 ? "text-green-500" : "text-red-500")}>
+                                    {myPortfolio.pnlPercent >= 0 ? '+' : ''}{myPortfolio.pnlPercent.toFixed(1)}%
+                                </p>
+                            </div>
+                            <div className="w-px h-6 bg-border"></div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">등급 내 순위</p>
+                                <p className="text-sm font-bold text-primary">상위 {myRankPercent}%</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

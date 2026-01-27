@@ -60,7 +60,7 @@ const allFeedItems = [
 
 
 const feedTabs = [
-  { value: 'whale', label: '고래 동향' },
+  { value: 'whale', label: '대량 체결' },
   { value: 'price_change', label: '시세 변동' },
   { value: 'volume_change', label: '거래량 변동' },
   { value: 'order_change', label: '주문량 변동' },

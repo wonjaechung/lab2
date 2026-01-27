@@ -161,8 +161,8 @@ export function MembershipAssetDistributionTimeline() {
             </p>
           </div>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="space-y-4">
+      <CardContent className="pb-0">
+        <div className="space-y-3">
           {/* 인사이트 배너 */}
           {insights.length > 0 && (
             <div className="space-y-2">
@@ -201,7 +201,7 @@ export function MembershipAssetDistributionTimeline() {
           {/* 누적 영역 차트 */}
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                 <defs>
                   {/* 더 부드러운 그라데이션 */}
                   <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">

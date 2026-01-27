@@ -110,15 +110,15 @@ const UPCOMING_EVENTS: EventItem[] = [
     dDay: 'D-7',
     date: '01.13 (월)',
     dateIso: getFutureDateIso(7),
-    title: '앱토스(APT) 대규모 락업 해제',
+    title: '솔라나(SOL) 대규모 락업 해제',
     type: 'unlock',
     impact: 'medium',
     description: '약 3,000억원 규모 물량 풀림 (매도 주의)',
     time: '09:00',
     insight: '전체 유통량의 2.5%에 해당하는 물량이 해제됩니다. 과거 패턴상 락업 해제 2-3일 전부터 가격 약세를 보이다가, 해제 직후 불확실성 해소로 반등하는 경향이 있었습니다.',
-    previous: '24.8M APT',
-    forecast: '24.8M APT',
-    relatedCoins: [{ symbol: 'APT', name: 'Aptos', change: '-2.1%' }],
+    previous: '34.2M SOL',
+    forecast: '34.2M SOL',
+    relatedCoins: [{ symbol: 'SOL', name: 'Solana', change: '-2.1%' }],
     tags: ['공급과잉', 'VC물량', '단기악재']
   },
   {
@@ -152,12 +152,44 @@ const UPCOMING_EVENTS: EventItem[] = [
     dDay: 'D-1',
     date: '01.09 (목)',
     dateIso: getFutureDateIso(1),
-    title: '빗썸 10주년 이벤트',
+    title: '빗썸 거래왕 이벤트',
     type: 'bithumb',
     impact: 'low',
     description: '수수료 무료 이벤트 종료 임박',
-    insight: '빗썸 창립 10주년 기념 대규모 이벤트가 곧 종료됩니다. 포인트 적립 및 경품 응모 마감을 확인하세요.',
+    insight: '빗썸 거래왕 이벤트가 곧 종료됩니다. 포인트 적립 및 경품 응모 마감을 확인하세요.',
     tags: ['이벤트', '에어드랍', '수수료']
+  },
+  {
+    id: '7',
+    dDay: 'D-5',
+    date: '01.11 (토)',
+    dateIso: getFutureDateIso(5),
+    title: '미국 고용지표 (NFP) 발표',
+    type: 'macro',
+    impact: 'high',
+    description: '비농업 고용지표 발표, 금리 정책에 영향',
+    time: '22:30',
+    previous: '216K',
+    forecast: '180K',
+    actual: '발표전',
+    insight: '고용 증가세가 둔화되면 연준의 금리 인하 가능성이 높아져 위험자산에 긍정적 영향을 미칠 수 있습니다.',
+    tags: ['고용', '연준', '금리정책']
+  },
+  {
+    id: '8',
+    dDay: 'D-10',
+    date: '01.16 (목)',
+    dateIso: getFutureDateIso(10),
+    title: '연준 금리 결정 발표',
+    type: 'macro',
+    impact: 'high',
+    description: '연준 FOMC 금리 결정 및 파월 의장 기자회견',
+    time: '04:00',
+    previous: '5.25-5.50%',
+    forecast: '5.25-5.50%',
+    actual: '발표전',
+    insight: '금리 동결이 예상되지만, 파월 의장의 향후 금리 인하 시그널에 주목해야 합니다. 인하 시그널이 강할수록 암호화폐 시장에 긍정적입니다.',
+    tags: ['금리', 'FOMC', '파월']
   }
 ];
 
@@ -165,11 +197,12 @@ interface UpcomingEventsProps {
   isDialogOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   showFullCalendar?: boolean;
+  initialEventId?: string;
 }
 
 const getTypeLabel = (type: EventItem['type']) => {
   switch (type) {
-    case 'unlock': return '공급 폭탄';
+    case 'unlock': return '락업해제';
     case 'upgrade': return '호재 이슈';
     case 'macro': return '경제 지표';
     case 'listing': return '신규 상장';
@@ -188,6 +221,37 @@ const getTypeColor = (type: EventItem['type']) => {
 };
 
 const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => void }) => {
+  // 락업해제 타입일 때 표시할 데이터 (이미지와 동일한 Solana 데이터)
+  const getUnlockData = (event: EventItem) => {
+    // 이미지와 동일하게 Solana 데이터 사용
+    const coinName = 'Solana';
+    const coinSymbol = 'SOL';
+    const currentPrice = 245000; // 현재가 245,000원
+    const unlockAmountValue = 34200000; // 해제 물량 34,200,000 SOL
+    const unlockAmount = '34,200,000 SOL';
+    const amountInKRW = unlockAmountValue * currentPrice; // 금액 규모
+    const circulatingSupply = 460000000; // 현재 유통량 4.6억개
+    const totalSupply = 580000000; // 총 발행량 5.8억개
+    const ratioToCirculating = 7.43; // 유통량 대비 비율 7.43%
+    const circulatingRatio = 79.5; // 현재 유통 비율 79.5%
+    
+    return {
+      coinName,
+      coinSymbol,
+      currentPrice,
+      unlockAmount,
+      unlockAmountValue,
+      amountInKRW,
+      circulatingSupply,
+      totalSupply,
+      ratioToCirculating,
+      circulatingRatio
+    };
+  };
+
+  const isUnlockType = event.type === 'unlock';
+  const unlockData = isUnlockType ? getUnlockData(event) : null;
+
   return (
     <div className="h-full flex flex-col">
       <div className="px-4 py-3 border-b shrink-0 bg-background z-10">
@@ -200,7 +264,19 @@ const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => vo
                 {getTypeLabel(event.type)}
             </span>
             <span className="text-xs text-muted-foreground">
-                {event.date} {event.time}
+                {(() => {
+                  const eventDate = parseISO(event.dateIso);
+                  const month = format(eventDate, 'M', { locale: ko });
+                  const day = format(eventDate, 'd', { locale: ko });
+                  if (event.time) {
+                    const [hourStr] = event.time.split(':');
+                    const hour = parseInt(hourStr);
+                    const period = hour < 12 ? '오전' : '오후';
+                    const displayHour = hour <= 12 ? hour : hour - 12;
+                    return `${month}월 ${day}일 ${period} ${displayHour}시`;
+                  }
+                  return `${month}월 ${day}일`;
+                })()}
             </span>
           </div>
         </div>
@@ -208,39 +284,87 @@ const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => vo
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-6">
-            <div className="space-y-1">
-                <h2 className="text-xl leading-snug font-bold">{event.title}</h2>
-                <p className="text-sm text-muted-foreground">{event.description}</p>
-            </div>
-            {(event.previous || event.forecast) && (
-                <div className="grid grid-cols-3 gap-2 p-3 bg-secondary/30 rounded-xl border border-border/50">
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-muted-foreground">이전</span>
-                        <span className="text-sm font-semibold">{event.previous || '-'}</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 border-l border-r border-border/50">
-                        <span className="text-xs text-muted-foreground">예상</span>
-                        <span className="text-sm font-semibold">{event.forecast || '-'}</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-primary font-bold">실제</span>
-                        <span className="text-sm font-bold text-primary">{event.actual || '대기'}</span>
-                    </div>
+            {isUnlockType && unlockData ? (
+              <>
+                {/* 헤더: 코인명, 현재가, 유통량 대비 비율 */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-bold">{unlockData.coinName} ({unlockData.coinSymbol})</h2>
+                    <p className="text-base text-foreground">현재가 {unlockData.currentPrice.toLocaleString()}원</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-foreground mb-1">유통량 대비 비율</p>
+                    <p className="text-2xl font-bold text-red-500">{unlockData.ratioToCirculating.toFixed(2)}%</p>
+                  </div>
                 </div>
-            )}
 
-            {event.insight && (
-                <div className="space-y-2">
-                    <h4 className="text-sm font-bold flex items-center gap-2">
-                        <BrainCircuit className="w-4 h-4 text-purple-500" />
-                        AI 요약
-                    </h4>
-                    <div className="p-3.5 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 rounded-xl">
-                        <p className="text-sm leading-relaxed text-foreground/90">
-                            {event.insight}
-                        </p>
-                    </div>
+                {/* 해제 물량과 금액 규모 카드 */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-5 bg-white dark:bg-card rounded-xl border border-border/50">
+                    <div className="text-sm text-foreground mb-3">해제 물량</div>
+                    <div className="text-3xl font-bold text-foreground">{unlockData.unlockAmount}</div>
+                  </div>
+                  <div className="p-5 bg-white dark:bg-card rounded-xl border border-border/50">
+                    <div className="text-sm text-foreground mb-3">금액 규모</div>
+                    <div className="text-3xl font-bold text-foreground">≈ {(unlockData.amountInKRW / 100000000).toFixed(1)}억원</div>
+                  </div>
                 </div>
+
+                {/* 현재 유통 비율 */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-foreground">현재 유통 비율</span>
+                    <span className="text-xl font-bold text-foreground">{unlockData.circulatingRatio.toFixed(1)}%</span>
+                  </div>
+                  <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-orange-500 transition-all"
+                      style={{ width: `${unlockData.circulatingRatio}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-foreground">
+                    <span>현재 유통량 {(unlockData.circulatingSupply / 100000000).toFixed(1)}억개</span>
+                    <span>총 발행량 {(unlockData.totalSupply / 100000000).toFixed(1)}억개</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1">
+                    <h2 className="text-xl leading-snug font-bold">{event.title}</h2>
+                    <p className="text-sm text-muted-foreground">{event.description}</p>
+                </div>
+                {(event.previous || event.forecast) && (
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-secondary/30 rounded-xl border border-border/50">
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-xs text-muted-foreground">이전</span>
+                            <span className="text-sm font-semibold">{event.previous || '-'}</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1 border-l border-r border-border/50">
+                            <span className="text-xs text-muted-foreground">예상</span>
+                            <span className="text-sm font-semibold">{event.forecast || '-'}</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-xs text-primary font-bold">실제</span>
+                            <span className="text-sm font-bold text-primary">{event.actual || '대기'}</span>
+                        </div>
+                    </div>
+                )}
+
+                {event.insight && event.type !== 'bithumb' && (
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                            <BrainCircuit className="w-4 h-4 text-purple-500" />
+                            AI 요약
+                        </h4>
+                        <div className="p-3.5 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 rounded-xl">
+                            <p className="text-sm leading-relaxed text-foreground/90">
+                                {event.insight}
+                            </p>
+                        </div>
+                    </div>
+                )}
+              </>
             )}
             
             {event.scenarios && (
@@ -301,7 +425,8 @@ const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => vo
                 </div>
             )}
 
-            {event.relatedCoins && event.type !== 'macro' && (
+            {/* 락업해제 타입이 아닐 때만 관련 코인과 해시태그 표시 */}
+            {!isUnlockType && event.relatedCoins && event.type !== 'macro' && (
                 <div className="space-y-2">
                     <h4 className="text-sm font-bold flex items-center gap-2">
                         <Wallet className="w-4 h-4 text-muted-foreground" />
@@ -327,7 +452,7 @@ const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => vo
                 </div>
             )}
             
-            {event.tags && (
+            {!isUnlockType && event.tags && event.type !== 'bithumb' && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {event.tags.map(tag => (
                         <span key={tag} className="text-[11px] text-muted-foreground bg-secondary px-2 py-1 rounded-md">
@@ -337,18 +462,20 @@ const EventDetailView = ({ event, onBack }: { event: EventItem, onBack: () => vo
                   </div>
             )}
         </div>
-        <div className="p-4 border-t sticky bottom-0 bg-background">
-            <Button className="w-full gap-2" variant="default">
-                <ExternalLink className="w-4 h-4" />
-                상세 뉴스/공시 보러가기
-            </Button>
-        </div>
+        {event.type !== 'bithumb' && (
+          <div className="p-4 border-t sticky bottom-0 bg-background">
+              <Button className="w-full gap-2" variant="default">
+                  <ExternalLink className="w-4 h-4" />
+                  상세 뉴스/공시 보러가기
+              </Button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showFullCalendar = false }: UpcomingEventsProps = {}) {
+export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showFullCalendar = false, initialEventId }: UpcomingEventsProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
   
   const isDialogOpen = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -363,13 +490,29 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
   // Refs for scrolling logic
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  
+
   useEffect(() => {
     setSelectedDate(new Date());
   }, []);
 
-  // Filter events based on active tab
+  // Set initial event if initialEventId is provided
+  useEffect(() => {
+    if (initialEventId && isDialogOpen) {
+      const event = UPCOMING_EVENTS.find(e => e.id === initialEventId);
+      if (event) {
+        setSelectedEvent(event);
+      }
+    } else if (!initialEventId && isDialogOpen) {
+      // Reset to full calendar view when dialog opens without initialEventId
+      setSelectedEvent(null);
+    }
+  }, [initialEventId, isDialogOpen]);
+
+  // Filter events based on active tab (호재 이슈 제외)
   const filteredEventsList = UPCOMING_EVENTS.filter(event => {
+    // 호재 이슈(upgrade) 타입 제외
+    if (event.type === 'upgrade') return false;
+    
     if (activeTab === 'all') return true;
     if (activeTab === 'macro') return event.type === 'macro';
     if (activeTab === 'unlock') return event.type === 'unlock';
@@ -514,7 +657,7 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
           return (
             <div
               key={dateIso}
-              ref={(el) => (eventRefs.current[dateIso] = el)}
+              ref={(el) => { eventRefs.current[dateIso] = el; }}
               className="scroll-mt-[130px]" // Adjusted scroll margin for header height
             >
               <h4 className="text-sm font-bold text-foreground mb-3 px-1 flex items-center gap-2 sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
@@ -523,11 +666,18 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
               </h4>
   
               <div className="space-y-3">
-                {dayEvents.map((event) => (
+                {dayEvents.map((event) => {
+                  // 미국 CPI(id: '2')와 솔라나 락업해제(id: '3')만 클릭 가능
+                  const isClickable = event.id === '2' || event.id === '3';
+                  
+                  return (
                   <div
                     key={event.id}
-                    className="flex items-start gap-3 p-3 bg-card border border-border rounded-xl shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
-                    onClick={() => setSelectedEvent(event)}
+                    className={cn(
+                      "flex items-start gap-3 p-3 bg-card border border-border rounded-xl shadow-sm transition-transform",
+                      isClickable ? "cursor-pointer active:scale-[0.98]" : "cursor-default"
+                    )}
+                    onClick={isClickable ? () => setSelectedEvent(event) : undefined}
                   >
                     <div className={cn('flex flex-col items-center justify-center w-10 h-10 rounded-lg border shrink-0 bg-opacity-10 border-opacity-20', getTypeColor(event.type))}>
                       {event.type === 'upgrade' && <TrendingUp className="w-5 h-5" />}
@@ -543,7 +693,13 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
                           <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', getTypeColor(event.type))}>
                             {getTypeLabel(event.type)}
                           </span>
-                          {event.time && <span className="text-[11px] text-muted-foreground">{event.time}</span>}
+                          {event.time && (() => {
+                            const [hourStr] = event.time.split(':');
+                            const hour = parseInt(hourStr);
+                            const period = hour < 12 ? '오전' : '오후';
+                            const displayHour = hour <= 12 ? hour : hour - 12;
+                            return <span className="text-[11px] text-muted-foreground">{period} {displayHour}시</span>;
+                          })()}
                         </div>
                       </div>
                       <h4 className="text-[13px] font-bold leading-tight mb-1">
@@ -553,9 +709,10 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
                         {event.description}
                       </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/50 self-center" />
+                    {isClickable && <ChevronRight className="w-4 h-4 text-muted-foreground/50 self-center" />}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -602,7 +759,7 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
                     <div className="flex items-start gap-2.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></div>
                         <div>
-                            <div className="font-bold text-foreground">공급 폭탄</div>
+                            <div className="font-bold text-foreground">락업해제</div>
                             <p className="text-muted-foreground leading-snug mt-0.5">대규모 락업 해제 등 매도 압력이 커질 수 있는 일정입니다.</p>
                         </div>
                     </div>
@@ -621,14 +778,21 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
         </div>
 
         <div className="space-y-1.5">
-          {UPCOMING_EVENTS.slice(0, 3).map((event) => (
+          {UPCOMING_EVENTS.slice(0, 3).map((event) => {
+            // 미국 CPI(id: '2')와 솔라나 락업해제(id: '3')만 클릭 가능
+            const isClickable = event.id === '2' || event.id === '3';
+            
+            return (
             <div 
               key={event.id}
-              className="flex items-center gap-2.5 p-2 bg-card border border-border rounded-lg shadow-sm hover:bg-muted/30 transition-colors cursor-pointer"
-              onClick={() => {
+              className={cn(
+                "flex items-center gap-2.5 p-2 bg-card border border-border rounded-lg shadow-sm transition-colors",
+                isClickable ? "hover:bg-muted/30 cursor-pointer" : "cursor-default"
+              )}
+              onClick={isClickable ? () => {
                 setSelectedEvent(event);
                 setIsDialogOpen(true);
-              }}
+              } : undefined}
             >
               <div className={cn('flex flex-col items-center justify-center w-8 h-8 rounded-md border shrink-0', event.dDay === 'Today' ? 'bg-red-500 border-red-600 text-white' : 'bg-secondary border-border')}>
                 <span className={cn('text-[10px] font-bold', event.dDay === 'Today' ? 'text-white' : 'text-foreground')}>
@@ -651,7 +815,8 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
                 </h4>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       )}
@@ -664,6 +829,11 @@ export function UpcomingEvents({ isDialogOpen: externalOpen, onOpenChange, showF
           }
         }}>
           <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>
+                {selectedEvent ? selectedEvent.title : '주요 일정 캘린더'}
+              </DialogTitle>
+            </DialogHeader>
             {selectedEvent ? (
               <EventDetailView event={selectedEvent} onBack={() => setSelectedEvent(null)} />
             ) : (
